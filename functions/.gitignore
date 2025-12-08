@@ -1,0 +1,19 @@
+# Dependências
+node_modules/
+
+# Build
+dist/
+build/
+
+# Ambiente e Segredos
+.env
+.env.local
+.DS_Store
+*.log
+firebase-debug.log*
+
+# Firebase
+.firebase/
+functions/node_modules/
+functions/lib/     # O código compilado TS não deve ir
+functions/*.log
