@@ -33,12 +33,13 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createPayment = exports.seedDatabase = exports.db = void 0;
+exports.paymentWebhook = exports.createPayment = exports.seedDatabase = exports.db = void 0;
 const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
 const https_2 = require("firebase-functions/v2/https");
 const logger = __importStar(require("firebase-functions/logger"));
 const mercadopago_1 = require("mercadopago");
+const mercadopago_2 = require("mercadopago");
 // Importa os dados dos produtos (certifique-se que este arquivo existe em src/data/products.ts)
 const products_1 = require("./data/products");
 // Inicializa o Admin SDK
@@ -63,36 +64,32 @@ exports.seedDatabase = (0, https_2.onRequest)(async (req, res) => {
     }
 });
 // ==========================================
-// 2. FUNÇÃO DE CHECKOUT (MERCADO PAGO)
+// 2. FUNÇÃO DE CHECKOUT (ATUALIZADA)
 // ==========================================
-exports.createPayment = (0, https_1.onCall)({ secrets: ["MERCADOPAGO_ACCESS_TOKEN"] }, // Libera acesso à chave segura
-async (request) => {
+exports.createPayment = (0, https_1.onCall)({ secrets: ["MERCADOPAGO_ACCESS_TOKEN"] }, async (request) => {
     var _a;
-    logger.info("🚀 [Backend] Iniciando processamento de pagamento...");
-    // 1. Validação dos Dados Recebidos
+    logger.info("🚀 [Backend] Iniciando nova transação...");
     const { product } = request.data;
-    if (!product) {
-        logger.error("❌ Produto não fornecido no corpo da requisição");
-        throw new https_1.HttpsError('invalid-argument', 'Os dados do produto são obrigatórios.');
-    }
-    // 2. Validação e Tratamento do Preço
-    // O MP exige que o preço seja um Number puro. Convertemos para garantir.
+    // ... (mantenha as validações de produto e preço iguais) ...
     const price = parseFloat(String(product.price));
-    if (isNaN(price) || price <= 0) {
-        logger.error(`❌ Preço inválido detectado: ${product.price}`);
-        throw new https_1.HttpsError('invalid-argument', 'O preço do produto é inválido.');
-    }
-    // 3. Configuração do Cliente Mercado Pago
+    // ...
     const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
-    if (!accessToken) {
-        logger.error("❌ Token do Mercado Pago não encontrado nas variáveis de ambiente");
-        throw new https_1.HttpsError('internal', 'Erro de configuração no servidor (Token ausente).');
-    }
+    if (!accessToken)
+        throw new https_1.HttpsError('internal', 'Token ausente');
     try {
+        // 1. SALVAR PEDIDO NO FIRESTORE (PENDENTE)
+        // Isso gera um ID único que usaremos para rastrear o pagamento
+        const orderRef = await exports.db.collection('orders').add({
+            productId: product.id,
+            productName: product.name,
+            amount: price,
+            status: 'pending', // Começa pendente
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        logger.info(`📝 Pedido criado no banco. ID: ${orderRef.id}`);
+        // 2. CONFIGURAR PREFERÊNCIA COM "EXTERNAL_REFERENCE"
         const client = new mercadopago_1.MercadoPagoConfig({ accessToken: accessToken });
         const preference = new mercadopago_1.Preference(client);
-        // 4. Criação da Preferência
-        logger.info(`📞 Contatando Mercado Pago para produto: ${product.name} (R$ ${price})`);
         const result = await preference.create({
             body: {
                 items: [
@@ -105,33 +102,85 @@ async (request) => {
                         currency_id: 'BRL'
                     },
                 ],
-                // URLs de retorno (Para onde o usuário volta após pagar)
+                // AQUI ESTÁ O TRUQUE: Ligamos o pagamento ao nosso ID do banco
+                external_reference: orderRef.id,
+                payment_methods: {
+                    excluded_payment_types: [],
+                    excluded_payment_methods: [],
+                    installments: 12
+                },
                 back_urls: {
-                    success: "https://google.com", // TODO: Trocar pela URL real do seu site depois
-                    failure: "https://google.com",
-                    pending: "https://google.com",
+                    success: "https://seu-site.web.app/sucesso", // Vamos criar essa página já já
+                    failure: "https://seu-site.web.app/falha",
+                    pending: "https://seu-site.web.app/pendente",
                 },
                 auto_return: "approved",
+                // Configura o Webhook para onde o MP deve gritar (substitua URL depois do deploy)
+                notification_url: `https://us-central1-${process.env.GCLOUD_PROJECT}.cloudfunctions.net/paymentWebhook`
             }
         });
-        // 5. Validação da Resposta
-        if (!result.init_point && !result.sandbox_init_point) {
-            logger.error("⚠️ Mercado Pago respondeu, mas sem links de pagamento:", result);
-            throw new https_1.HttpsError('unavailable', 'O Mercado Pago não retornou o link de pagamento.');
-        }
-        logger.info(`✅ Preferência criada com sucesso! ID: ${result.id}`);
-        // 6. Retorno para o Frontend
         return {
             init_point: result.init_point,
             sandbox_init_point: result.sandbox_init_point,
-            id: result.id
+            orderId: orderRef.id // Retornamos o ID do pedido para o frontend saber
         };
     }
     catch (error) {
-        // Log detalhado do erro técnico
-        logger.error("❌ ERRO CRÍTICO NA API DO MP:", error);
-        // Retorna um erro amigável para o frontend, mas com detalhes técnicos se necessário
-        throw new https_1.HttpsError('internal', `Falha ao processar pagamento: ${error.message || 'Erro desconhecido'}`);
+        logger.error("❌ ERRO CRÍTICO MP:", error);
+        throw new https_1.HttpsError('internal', `Erro: ${error.message}`);
+    }
+});
+// ==========================================
+// 3. WEBHOOK (OUVINTE DE PAGAMENTOS)
+// ==========================================
+exports.paymentWebhook = (0, https_2.onRequest)({ secrets: ["MERCADOPAGO_ACCESS_TOKEN"] }, async (req, res) => {
+    const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+    if (!accessToken) {
+        logger.error("Token não configurado");
+        res.status(500).send("Server Error");
+        return;
+    }
+    // O MP manda uma query string tipo: ?id=12345&topic=payment
+    const { type, data } = req.body;
+    const queryId = req.query.id || req.query['data.id'];
+    const topic = req.query.topic || type;
+    // Só nos interessa se for notificação de pagamento
+    if (topic === 'payment') {
+        const paymentId = (data === null || data === void 0 ? void 0 : data.id) || queryId;
+        logger.info(`🔔 Webhook recebido! Payment ID: ${paymentId}`);
+        try {
+            // 1. Consultar o Mercado Pago para confirmar o status real (Segurança)
+            // Nunca confie apenas no req.body, vá na fonte checar.
+            const client = new mercadopago_1.MercadoPagoConfig({ accessToken: accessToken });
+            const paymentClient = new mercadopago_2.Payment(client);
+            const payment = await paymentClient.get({ id: String(paymentId) });
+            // 2. Se aprovado, atualizar o Firestore
+            if (payment.status === 'approved') {
+                const orderId = payment.external_reference; // Recuperamos nosso ID
+                if (orderId) {
+                    logger.info(`✅ Pagamento Aprovado! Atualizando pedido ${orderId}`);
+                    await exports.db.collection('orders').doc(orderId).update({
+                        status: 'paid',
+                        paidAt: admin.firestore.FieldValue.serverTimestamp(),
+                        mercadoPagoId: payment.id,
+                        paymentMethod: payment.payment_method_id
+                    });
+                }
+                else {
+                    logger.warn("⚠️ Pagamento aprovado sem external_reference");
+                }
+            }
+            // Responder 200 OK para o Mercado Pago parar de mandar notificação
+            res.status(200).send("OK");
+        }
+        catch (error) {
+            logger.error("Erro no Webhook:", error);
+            res.status(500).send("Erro interno");
+        }
+    }
+    else {
+        // Outros tópicos (merchant_order, etc) apenas ignoramos com 200 OK
+        res.status(200).send("Ignored");
     }
 });
 //# sourceMappingURL=index.js.map

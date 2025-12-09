@@ -9,6 +9,7 @@ export interface Product {
   category: string;
   featured: boolean;
   stock: number;
+  isQuoteOnly?: boolean;
 }
 
 export interface CartItem extends Product {

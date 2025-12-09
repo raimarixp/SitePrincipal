@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions'; // Importante ter isso
+import { getAuth } from 'firebase/auth';
 
 // Sua configuração (mantenha a que você já colocou)
 const firebaseConfig = {
@@ -18,3 +19,4 @@ const app = initializeApp(firebaseConfig);
 // EXPORTAÇÕES OBRIGATÓRIAS
 export const db = getFirestore(app);
 export const functions = getFunctions(app); // <--- Essa linha é crucial para o erro sumir
+export const auth = getAuth(app);
