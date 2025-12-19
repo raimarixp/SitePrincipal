@@ -1,52 +1,49 @@
 import { 
+  CodeBracketIcon, 
+  ClockIcon, 
   ShieldCheckIcon, 
-  TruckIcon, 
-  CurrencyDollarIcon, 
-  ChatBubbleLeftRightIcon 
+  RocketLaunchIcon 
 } from '@heroicons/react/24/outline';
 
 const features = [
   {
-    name: 'Compra Segura',
-    description: 'Seus dados protegidos com criptografia de ponta a ponta.',
+    name: 'Desenvolvimento Ágil',
+    description: 'Entregas rápidas com código limpo e escalável.',
+    icon: RocketLaunchIcon,
+  },
+  {
+    name: 'Suporte Especializado',
+    description: 'Equipe técnica pronta para atender sua empresa.',
+    icon: CodeBracketIcon, // Ou ChatBubbleLeftRightIcon
+  },
+  {
+    name: 'Segurança de Dados',
+    description: 'Sistemas blindados e adequados à LGPD.',
     icon: ShieldCheckIcon,
   },
   {
-    name: 'Entrega Expressa',
-    description: 'Logística otimizada para você receber seu produto em tempo recorde.',
-    icon: TruckIcon,
-  },
-  {
-    name: 'Melhor Custo-Benefício',
-    description: 'Preços competitivos com garantia de qualidade superior.',
-    icon: CurrencyDollarIcon,
-  },
-  {
-    name: 'Suporte Dedicado',
-    description: 'Equipe pronta para atender você 24 horas por dia, 7 dias por semana.',
-    icon: ChatBubbleLeftRightIcon,
+    name: 'Alta Disponibilidade',
+    description: 'Seu sistema online 24 horas por dia, 7 dias por semana.',
+    icon: ClockIcon,
   },
 ];
 
 export const ValueProposition = () => {
   return (
-    <section className="py-16 bg-white">
+    <div className="bg-neutral-900 py-16 relative z-10 border-t border-white/5">
       <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {features.map((feature) => (
-            <div 
-              key={feature.name} 
-              className="flex flex-col items-center text-center p-6 rounded-2xl bg-neutral-50 hover:bg-white hover:shadow-xl transition-all duration-300 border border-transparent hover:border-primary/10 group"
-            >
-              <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-white transition-colors duration-300">
-                <feature.icon className="h-8 w-8 text-primary group-hover:text-white" aria-hidden="true" />
+            <div key={feature.name} className="flex flex-col items-center text-center p-4 hover:bg-white/5 rounded-2xl transition-colors">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/20 text-primary mb-4">
+                <feature.icon className="h-6 w-6" aria-hidden="true" />
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">{feature.name}</h3>
-              <p className="text-sm text-gray-500 leading-relaxed">{feature.description}</p>
+              <h3 className="text-lg font-bold text-white mb-2">{feature.name}</h3>
+              <p className="text-sm text-gray-400 leading-relaxed">{feature.description}</p>
             </div>
           ))}
         </div>
       </div>
-    </section>
+    </div>
   );
 };

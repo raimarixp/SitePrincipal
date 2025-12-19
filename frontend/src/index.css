@@ -1,9 +1,24 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-neutral-50 text-neutral-900 antialiased;
+  html {
+    font-family: 'Inter', sans-serif;
+    @apply antialiased text-gray-900 bg-white;
+  }
+
+  /* Estiliza os títulos para serem BEM pesados como nas fotos */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-black tracking-tight; /* font-weight: 900 */
+  }
+}
+
+@layer components {
+  /* Botão arredondado estilo "Pílula" (Shop All) */
+  .btn-pill {
+    @apply rounded-full px-8 py-3 font-bold transition-all duration-300;
   }
 }

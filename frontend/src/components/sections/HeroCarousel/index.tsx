@@ -1,33 +1,37 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Button } from '../../ui/Button';
 
-// Dados dos Slides (Em um projeto real, viriam do Firebase/CMS)
+// Dados dos Slides (Adaptados para Software House)
 const slides = [
   {
     id: 1,
-    image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1920',
-    title: 'Soluções Corporativas de Alta Performance',
-    subtitle: 'Transforme a gestão da sua empresa com nossa tecnologia de ponta e consultoria especializada.',
-    cta: 'Conheça Nossos Planos',
+    // Imagem: Código / Tecnologia
+    image: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=1920',
+    title: 'Transforme seu Negócio com Tecnologia',
+    subtitle: 'Desenvolvimento de Sites, Sistemas de Ponto e Softwares sob medida para alavancar sua empresa.',
+    cta: 'Conheça Nossas Soluções',
     link: '/produtos'
   },
   {
     id: 2,
-    image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&q=80&w=1920',
-    title: 'Inovação que Impulsiona Resultados',
-    subtitle: 'Ferramentas integradas para escalar seu negócio com segurança e eficiência.',
-    cta: 'Fale com um Consultor',
-    link: '/contato'
+    // Imagem: Dashboard / Gestão
+    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1920',
+    title: 'Gestão Inteligente & Ponto Eletrônico',
+    subtitle: 'Sistemas completos para RH e controle de ponto com integração biométrica e relatórios em tempo real.',
+    cta: 'Ver Sistema de Ponto',
+    link: '/produtos' // Ou um link direto para a categoria de sistemas
   },
   {
     id: 3,
-    image: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&q=80&w=1920',
-    title: 'Suporte Premium 24/7',
-    subtitle: 'Nossa equipe de especialistas está sempre pronta para garantir o sucesso da sua operação.',
-    cta: 'Saiba Mais',
-    link: '/sobre'
+    // Imagem: Design / Web
+    image: 'https://images.unsplash.com/photo-1664575602554-2087b04935a5?auto=format&fit=crop&q=80&w=1920',
+    title: 'Sites que Convertem Visitantes em Clientes',
+    subtitle: 'Websites institucionais e Landing Pages de alta performance, otimizados para SEO e mobile.',
+    cta: 'Solicitar Orçamento',
+    link: '/contato'
   }
 ];
 
@@ -38,7 +42,7 @@ export const HeroCarousel = () => {
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrent((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
-    }, 5000); // Troca a cada 5 segundos
+    }, 6000); // Aumentei levemente para 6s para dar tempo de ler
 
     return () => clearInterval(timer);
   }, []);
@@ -69,28 +73,35 @@ export const HeroCarousel = () => {
                 className="absolute inset-0 bg-cover bg-center"
                 style={{ backgroundImage: `url(${slide.image})` }}
               >
-                {/* Overlay Escuro para legibilidade do texto */}
-                <div className="absolute inset-0 bg-black/50" />
+                {/* Overlay Escuro com Gradiente para melhor leitura */}
+                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
               </div>
 
               {/* Conteúdo do Slide */}
               <div className="relative container mx-auto h-full px-6 flex flex-col justify-center">
                 <motion.div
-                  initial={{ y: 20, opacity: 0 }}
+                  initial={{ y: 30, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.2, duration: 0.5 }}
+                  transition={{ delay: 0.2, duration: 0.6 }}
                   className="max-w-3xl space-y-6"
                 >
-                  <h1 className="text-4xl md:text-6xl font-bold text-white leading-tight">
+                  <h1 className="text-4xl md:text-6xl font-black text-white leading-tight tracking-tight drop-shadow-lg">
                     {slide.title}
                   </h1>
-                  <p className="text-lg md:text-xl text-neutral-200 max-w-2xl">
+                  <p className="text-lg md:text-xl text-gray-200 max-w-2xl font-medium drop-shadow-md leading-relaxed">
                     {slide.subtitle}
                   </p>
-                  <div className="pt-4">
-                    <Button size="lg" className="bg-primary hover:bg-primary-hover border-none">
-                      {slide.cta}
-                    </Button>
+                  
+                  <div className="pt-6">
+                    {/* Envolvi o Button no Link para funcionar a navegação */}
+                    <Link to={slide.link}>
+                      <Button 
+                        size="lg" 
+                        className="bg-primary hover:bg-red-600 text-white font-bold px-8 py-4 rounded-full shadow-lg hover:scale-105 transition-transform border-none"
+                      >
+                        {slide.cta}
+                      </Button>
+                    </Link>
                   </div>
                 </motion.div>
               </div>
@@ -100,28 +111,32 @@ export const HeroCarousel = () => {
       </AnimatePresence>
 
       {/* Setas de Navegação (Desktop) */}
-      <button 
-        onClick={prevSlide}
-        className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm transition-all hidden md:block"
-      >
-        <ChevronLeftIcon className="w-8 h-8" />
-      </button>
+      <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+        <button 
+          onClick={prevSlide}
+          className="pointer-events-auto p-3 rounded-full bg-black/20 hover:bg-black/40 text-white backdrop-blur-md transition-all hidden md:block border border-white/10"
+        >
+          <ChevronLeftIcon className="w-6 h-6" />
+        </button>
+      </div>
 
-      <button 
-        onClick={nextSlide}
-        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm transition-all hidden md:block"
-      >
-        <ChevronRightIcon className="w-8 h-8" />
-      </button>
+      <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+        <button
+          onClick={nextSlide}
+          className="pointer-events-auto p-3 rounded-full bg-black/20 hover:bg-black/40 text-white backdrop-blur-md transition-all hidden md:block border border-white/10"
+        >
+          <ChevronRightIcon className="w-6 h-6" />
+        </button>
+      </div>
 
       {/* Indicadores (Dots) */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex space-x-3">
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex space-x-3 z-20">
         {slides.map((_, idx) => (
           <button
             key={idx}
             onClick={() => setCurrent(idx)}
-            className={`w-3 h-3 rounded-full transition-all duration-300 ${
-              idx === current ? 'bg-primary w-8' : 'bg-white/50 hover:bg-white'
+            className={`h-2 rounded-full transition-all duration-300 shadow-sm ${
+              idx === current ? 'bg-primary w-8' : 'bg-white/50 w-2 hover:bg-white'
             }`}
           />
         ))}

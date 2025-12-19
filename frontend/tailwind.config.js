@@ -6,26 +6,23 @@ export default {
   ],
   theme: {
     extend: {
-      screens: {
-        'xs': '475px', // Breakpoint extra solicitado
-      },
       colors: {
         primary: {
-          DEFAULT: '#2563eb', // Azul profissional
-          hover: '#1d4ed8',
+          DEFAULT: '#E63946', // Vermelho Vibrante (Estilo Uncode)
+          hover: '#D62828',   // Vermelho mais escuro para hover
         },
         secondary: {
-          DEFAULT: '#7c3aed', // Roxo para CTAs
-          hover: '#6d28d9',
+          DEFAULT: '#1D3557', // Azul Escuro Profundo (para contraste se precisar)
+          hover: '#457B9D',
         },
-        accent: '#10b981',    // Verde sucesso
-        neutral: {
-          50: '#f9fafb',
-          900: '#111827'
-        }
+        dark: '#111827',      // Preto "suave" para fundos escuros
+        light: '#F8F9FA',     // Cinza quase branco para fundos claros
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'], // Recomendação profissional
+        sans: ['Inter', 'sans-serif'], // Vamos configurar isso no CSS já já
+      },
+      backgroundImage: {
+        'hero-pattern': "url('https://images.unsplash.com/photo-1483985988355-763728e1935b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')",
       }
     },
   },

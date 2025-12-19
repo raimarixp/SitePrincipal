@@ -3,29 +3,44 @@ import { Button } from '../../ui/Button';
 
 export const ContactCTA = () => {
   return (
-    <section className="py-24 bg-primary relative overflow-hidden">
-      {/* Círculos decorativos de fundo */}
-      <div className="absolute top-0 left-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-x-1/2 -translate-y-1/2" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-white opacity-10 rounded-full translate-x-1/3 translate-y-1/3" />
+    <section className="py-24 relative z-10">
+      <div className="container mx-auto px-6">
+        
+        {/* MUDANÇA: bg-black/40 (Vidro Escuro) para garantir contraste do texto branco */}
+        <div className="relative overflow-hidden rounded-3xl bg-black/40 backdrop-blur-md border border-white/10 shadow-2xl px-6 py-16 text-center sm:px-12 md:px-24">
+          
+          <h2 className="mx-auto max-w-2xl text-3xl font-black tracking-tight text-white sm:text-4xl mb-6 drop-shadow-sm">
+            Pronto para transformar seu negócio?
+          </h2>
+          
+          <p className="mx-auto max-w-xl text-lg text-gray-200 mb-10 opacity-90 leading-relaxed font-medium">
+            Nossa equipe de especialistas está pronta para ajudar você a encontrar 
+            a solução ideal. Entre em contato hoje mesmo e tire suas dúvidas.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link to="/contato">
+              {/* BOTÃO PRIMÁRIO: Vermelho Vibrante + Texto Preto */}
+              <Button 
+                size="lg" 
+                className="rounded-full px-8 bg-[#FF0000] hover:bg-red-600 text-black border-none min-w-[180px] font-black shadow-lg hover:scale-105 transition-transform"
+              >
+                Fale Conosco
+              </Button>
+            </Link>
+            
+            <Link to="/produtos">
+              {/* BOTÃO SECUNDÁRIO: Borda Branca + Texto Branco (Agora visível no fundo escuro) */}
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="rounded-full px-8 border-2 border-white text-white hover:bg-white hover:text-black min-w-[180px] font-bold backdrop-blur-sm"
+              >
+                Ver Catálogo
+              </Button>
+            </Link>
+          </div>
 
-      <div className="container mx-auto px-6 relative z-10 text-center">
-        <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-          Pronto para levar seu negócio ao próximo nível?
-        </h2>
-        <p className="text-primary-100 text-lg mb-10 max-w-2xl mx-auto">
-          Fale com nossos especialistas hoje mesmo e descubra como podemos ajudar você a alcançar seus objetivos com tecnologia de ponta.
-        </p>
-        <div className="flex flex-col sm:flex-row justify-center gap-4">
-          <Link to="/contato">
-            <Button size="lg" className="bg-white text-primary hover:bg-gray-100 border-none w-full sm:w-auto">
-              Falar com Consultor
-            </Button>
-          </Link>
-          <Link to="/produtos">
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 w-full sm:w-auto">
-              Ver Catálogo Completo
-            </Button>
-          </Link>
         </div>
       </div>
     </section>

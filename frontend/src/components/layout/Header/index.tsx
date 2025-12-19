@@ -1,12 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Dialog, Menu, Transition } from '@headlessui/react';
-import { Fragment } from 'react';
-import { Bars3Icon, XMarkIcon, ShoppingCartIcon, UserCircleIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, XMarkIcon, ShoppingBagIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 import { Button } from '../../ui/Button';
 import { cn } from '../../../utils/helpers';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useCart } from '../../../contexts/CartContext';
+
+// 👇 NOVOS IMPORTS para verificar o banco de dados
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../../services/firebase';
 
 const navigation = [
   { name: 'Início', href: '/' },
@@ -18,9 +21,9 @@ const navigation = [
 export const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false); // 👇 Novo estado para controlar visibilidade
   const location = useLocation();
   
-  // Hooks Globais
   const { user, signOut } = useAuth();
   const { cartCount } = useCart();
 
@@ -30,22 +33,67 @@ export const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // 👇 EFEITO NOVO: Verifica se o usuário é Admin no Firestore
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user) {
+        setIsAdmin(false);
+        return;
+      }
+      try {
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        
+        // Verifica se existe e se a role é 'admin'
+        if (userDocSnap.exists() && userDocSnap.data().role === 'admin') {
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
+        }
+      } catch (error) {
+        console.error("Erro ao verificar admin:", error);
+        setIsAdmin(false);
+      }
+    };
+
+    checkAdminStatus();
+  }, [user]); // Roda sempre que o usuário mudar (logar/deslogar)
+
+  const CartIcon = () => (
+    <Link to="/carrinho" className="group -m-2 flex items-center p-2">
+      <div className="relative">
+        <ShoppingBagIcon
+          className={cn(
+            "h-6 w-6 flex-shrink-0 transition-colors",
+            "text-gray-900 group-hover:text-primary"
+          )}
+          aria-hidden="true"
+        />
+        {cartCount > 0 && (
+          <span className="absolute -top-1 -right-2 h-4 w-4 rounded-full bg-secondary text-[10px] font-bold text-white flex items-center justify-center shadow-sm">
+            {cartCount}
+          </span>
+        )}
+      </div>
+      <span className="sr-only">itens no carrinho, ver sacola</span>
+    </Link>
+  );
+
   return (
     <header className={cn(
       "fixed inset-x-0 top-0 z-50 transition-all duration-300",
-      scrolled ? "bg-white/90 backdrop-blur-md shadow-sm py-2" : "bg-white py-4"
+      scrolled ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100" : "bg-white"
     )}>
-      <nav className="container mx-auto px-6 flex items-center justify-between" aria-label="Global">
+      <nav className="container mx-auto px-4 sm:px-6 flex items-center justify-between py-4" aria-label="Global">
         
-        {/* Logo */}
         <div className="flex lg:flex-1">
-          <Link to="/" className="-m-1.5 p-1.5 text-2xl font-bold tracking-tight text-primary">
-            EMPRESA<span className="text-secondary">.</span>
+          <Link to="/" className="-m-1.5 p-1.5 text-2xl font-black tracking-tighter text-gray-900">
+            EMPRESA<span className="text-primary">.</span>
           </Link>
         </div>
 
-        {/* Mobile Menu Button */}
-        <div className="flex lg:hidden">
+        <div className="flex lg:hidden items-center gap-4">
+          <CartIcon />
           <button
             type="button"
             className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-gray-700"
@@ -56,7 +104,6 @@ export const Header = () => {
           </button>
         </div>
 
-        {/* Desktop Navigation */}
         <div className="hidden lg:flex lg:gap-x-8">
           {navigation.map((item) => (
             <Link
@@ -72,29 +119,37 @@ export const Header = () => {
           ))}
         </div>
 
-        {/* Desktop Actions */}
-        <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center gap-4">
+        <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center gap-6">
           
-          {/* Carrinho */}
-          <Link to="/carrinho" className="relative p-2 text-gray-900 hover:text-primary transition-colors group">
-            <ShoppingCartIcon className="h-6 w-6" />
-            {cartCount > 0 && (
-              <span className="absolute top-0 right-0 h-5 w-5 rounded-full bg-secondary text-[11px] font-bold text-white flex items-center justify-center shadow-sm group-hover:bg-secondary-hover transition-colors">
-                {cartCount}
-              </span>
-            )}
-          </Link>
+          {/* 👇 MUDANÇA: Agora verificamos 'isAdmin' em vez de apenas 'user' */}
+          {isAdmin && (
+            <Link to="/admin" className="group -m-2 flex items-center p-2" title="Painel Administrativo">
+              <Cog6ToothIcon 
+                className="h-6 w-6 flex-shrink-0 transition-colors text-gray-900 group-hover:text-primary" 
+                aria-hidden="true"
+              />
+            </Link>
+          )}
 
-          {/* User Menu (Logado vs Deslogado) */}
+          <CartIcon />
+          
+          <div className="h-6 w-px bg-gray-200" aria-hidden="true" />
+
           {user ? (
-            <Menu as="div" className="relative ml-3">
-              <Menu.Button className="flex items-center gap-2 rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+            <Menu as="div" className="relative">
+              <Menu.Button className="-m-1.5 flex items-center p-1.5 focus:outline-none">
                 <span className="sr-only">Abrir menu de usuário</span>
-                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                  {user.email?.charAt(0).toUpperCase()}
-                </div>
-                <span className="hidden md:block font-medium text-gray-700">
-                  {user.displayName || 'Minha Conta'}
+                {user.photoURL ? (
+                  <img className="h-8 w-8 rounded-full bg-gray-50 object-cover" src={user.photoURL} alt="" />
+                ) : (
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                    {user.email?.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <span className="hidden lg:flex lg:items-center">
+                  <span className="ml-2 text-sm font-semibold leading-6 text-gray-900" aria-hidden="true">
+                    {user.displayName?.split(' ')[0] || 'Minha Conta'}
+                  </span>
                 </span>
               </Menu.Button>
               <Transition
@@ -106,26 +161,38 @@ export const Header = () => {
                 leaveFrom="transform opacity-100 scale-100"
                 leaveTo="transform opacity-0 scale-95"
               >
-                <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                <Menu.Items className="absolute right-0 z-10 mt-2.5 w-48 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none">
                   <Menu.Item>
                     {({ active }) => (
-                      <Link to="/minha-conta" className={cn(active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700')}>
+                      <Link to="/minha-conta" className={cn(active ? 'bg-gray-50' : '', 'block px-3 py-1 text-sm leading-6 text-gray-900')}>
                         Meu Perfil
                       </Link>
                     )}
                   </Menu.Item>
                   <Menu.Item>
                     {({ active }) => (
-                      <Link to="/meus-pedidos" className={cn(active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700')}>
+                      <Link to="/meus-pedidos" className={cn(active ? 'bg-gray-50' : '', 'block px-3 py-1 text-sm leading-6 text-gray-900')}>
                         Meus Pedidos
                       </Link>
                     )}
                   </Menu.Item>
+                  
+                  {/* 👇 MUDANÇA: Link Admin no Dropdown também protegido */}
+                  {isAdmin && (
+                    <Menu.Item>
+                      {({ active }) => (
+                        <Link to="/admin" className={cn(active ? 'bg-gray-50' : '', 'block px-3 py-1 text-sm leading-6 text-gray-900 font-bold text-primary')}>
+                          Painel Admin
+                        </Link>
+                      )}
+                    </Menu.Item>
+                  )}
+
                   <Menu.Item>
                     {({ active }) => (
                       <button
-                        onClick={signOut}
-                        className={cn(active ? 'bg-gray-100' : '', 'block w-full text-left px-4 py-2 text-sm text-red-600')}
+                        onClick={() => signOut()}
+                        className={cn(active ? 'bg-gray-50' : '', 'block w-full text-left px-3 py-1 text-sm leading-6 text-red-600')}
                       >
                         Sair
                       </button>
@@ -135,27 +202,27 @@ export const Header = () => {
               </Transition>
             </Menu>
           ) : (
-            <Link to="/login">
-              <Button size="sm" variant="outline" className="gap-2">
-                <UserCircleIcon className="h-5 w-5" />
-                Entrar
-              </Button>
+            <Link to="/login" className="text-sm font-semibold leading-6 text-gray-900 hover:text-primary">
+              Entrar <span aria-hidden="true">&rarr;</span>
             </Link>
           )}
         </div>
       </nav>
 
-      {/* Mobile Menu (Simplificado) */}
+      {/* MENU MOBILE */}
       <Dialog as="div" className="lg:hidden" open={mobileMenuOpen} onClose={setMobileMenuOpen}>
         <div className="fixed inset-0 z-50" />
         <Dialog.Panel className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10">
           <div className="flex items-center justify-between">
-            <Link to="/" className="-m-1.5 p-1.5 text-2xl font-bold text-primary">EMPRESA.</Link>
+            <Link to="/" className="-m-1.5 p-1.5 text-2xl font-black text-gray-900">
+              EMPRESA<span className="text-primary">.</span>
+            </Link>
             <button
               type="button"
               className="-m-2.5 rounded-md p-2.5 text-gray-700"
               onClick={() => setMobileMenuOpen(false)}
             >
+              <span className="sr-only">Fechar menu</span>
               <XMarkIcon className="h-6 w-6" aria-hidden="true" />
             </button>
           </div>
@@ -175,14 +242,63 @@ export const Header = () => {
               </div>
               <div className="py-6">
                 {user ? (
-                  <div className="space-y-3">
-                    <p className="font-semibold text-gray-900">Olá, {user.email}</p>
-                    <Link to="/minha-conta" className="block text-sm text-gray-600">Meu Perfil</Link>
-                    <button onClick={signOut} className="block text-sm text-red-600">Sair</button>
-                  </div>
+                  <>
+                    <div className="flex items-center gap-3 mb-4 px-3">
+                      {user.photoURL ? (
+                        <img className="h-10 w-10 rounded-full bg-gray-50 object-cover" src={user.photoURL} alt="" />
+                      ) : (
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                          {user.email?.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-semibold text-gray-900">{user.displayName || user.email}</p>
+                        <p className="text-xs text-gray-500">Logado</p>
+                      </div>
+                    </div>
+                    
+                    {/* 👇 MUDANÇA: Link Admin Mobile protegido */}
+                    {isAdmin && (
+                      <Link
+                        to="/admin"
+                        className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50 bg-gray-50"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        🔧 Painel Admin
+                      </Link>
+                    )}
+
+                    <Link
+                      to="/meus-pedidos"
+                      className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      📦 Meus Pedidos
+                    </Link>
+                    <Link
+                      to="/minha-conta"
+                      className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      ⚙️ Configurações
+                    </Link>
+                    <button
+                      onClick={() => {
+                        signOut();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="-mx-3 block w-full text-left rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-red-600 hover:bg-gray-50"
+                    >
+                      Sair da conta
+                    </button>
+                  </>
                 ) : (
-                  <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
-                    <Button className="w-full">Entrar / Cadastrar</Button>
+                  <Link
+                    to="/login"
+                    className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Button className="w-full justify-center">Entrar / Cadastrar</Button>
                   </Link>
                 )}
               </div>
