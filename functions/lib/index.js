@@ -36,150 +36,161 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.paymentWebhook = exports.createPayment = exports.seedDatabase = exports.db = void 0;
 const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
-const https_2 = require("firebase-functions/v2/https");
 const logger = __importStar(require("firebase-functions/logger"));
 const mercadopago_1 = require("mercadopago");
-const mercadopago_2 = require("mercadopago");
-// Importa os dados dos produtos (certifique-se que este arquivo existe em src/data/products.ts)
-const products_1 = require("./data/products");
+const products_1 = require("./data/products"); // Certifique-se que o arquivo existe
 // Inicializa o Admin SDK
 admin.initializeApp();
 exports.db = admin.firestore();
 // ==========================================
 // 1. FUNÇÃO PARA POPULAR O BANCO (SEED)
 // ==========================================
-exports.seedDatabase = (0, https_2.onRequest)(async (req, res) => {
+exports.seedDatabase = (0, https_1.onRequest)(async (req, res) => {
     try {
         const batch = exports.db.batch();
         products_1.productsData.forEach((product) => {
-            const docRef = exports.db.collection("products").doc(product.id);
-            batch.set(docRef, Object.assign(Object.assign({}, product), { createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() }));
+            const productRef = exports.db.collection('products').doc(product.id);
+            // Usamos { merge: true } para não apagar campos extras se existirem
+            batch.set(productRef, product, { merge: true });
         });
         await batch.commit();
-        res.json({ message: "Banco de dados populado com sucesso!", count: products_1.productsData.length });
+        res.status(200).send(`Sucesso! ${products_1.productsData.length} produtos sincronizados.`);
     }
     catch (error) {
         logger.error("Erro ao popular banco:", error);
-        res.status(500).json({ error: "Falha interna ao popular banco" });
+        res.status(500).send("Erro interno ao popular banco.");
     }
 });
 // ==========================================
-// 2. FUNÇÃO DE CHECKOUT (ATUALIZADA)
+// 2. FUNÇÃO DE CHECKOUT (Cria Pedido + Link MP)
 // ==========================================
 exports.createPayment = (0, https_1.onCall)({ secrets: ["MERCADOPAGO_ACCESS_TOKEN"] }, async (request) => {
     var _a;
-    logger.info("🚀 [Backend] Iniciando nova transação...");
-    const { product } = request.data;
-    // ... (mantenha as validações de produto e preço iguais) ...
-    const price = parseFloat(String(product.price));
-    // ...
-    const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
-    if (!accessToken)
-        throw new https_1.HttpsError('internal', 'Token ausente');
+    // 1. Validar autenticação
+    if (!request.auth) {
+        throw new https_1.HttpsError('unauthenticated', 'Usuário não logado.');
+    }
+    const userId = request.auth.uid;
+    const userEmail = request.auth.token.email || 'cliente@loja.com';
+    // 2. Validar Carrinho
+    const cartItems = request.data.items;
+    if (!cartItems || cartItems.length === 0) {
+        throw new https_1.HttpsError('invalid-argument', 'Carrinho vazio.');
+    }
+    // 3. Validar Produtos e Calcular Preço Real (Segurança)
+    const validatedItems = [];
+    let totalAmount = 0;
     try {
-        // 1. SALVAR PEDIDO NO FIRESTORE (PENDENTE)
-        // Isso gera um ID único que usaremos para rastrear o pagamento
+        for (const item of cartItems) {
+            const productDoc = await exports.db.collection('products').doc(item.id).get();
+            if (!productDoc.exists) {
+                throw new https_1.HttpsError('not-found', `Produto ${item.id} indisponível.`);
+            }
+            const productData = productDoc.data();
+            const unitPrice = Number((productData === null || productData === void 0 ? void 0 : productData.price) || 0);
+            const quantity = Number(item.quantity);
+            validatedItems.push({
+                id: item.id,
+                title: (productData === null || productData === void 0 ? void 0 : productData.name) || 'Produto',
+                quantity: quantity,
+                currency_id: 'BRL',
+                unit_price: unitPrice,
+                picture_url: ((_a = productData === null || productData === void 0 ? void 0 : productData.images) === null || _a === void 0 ? void 0 : _a[0]) || ''
+            });
+            totalAmount += unitPrice * quantity;
+        }
+        // 4. CRIAR O PEDIDO NO FIRESTORE (Status: Pending)
+        // Isso é crucial para o Webhook ter o que atualizar depois
         const orderRef = await exports.db.collection('orders').add({
-            productId: product.id,
-            productName: product.name,
-            amount: price,
-            status: 'pending', // Começa pendente
-            createdAt: admin.firestore.FieldValue.serverTimestamp()
+            userId: userId,
+            userEmail: userEmail,
+            items: validatedItems,
+            total: totalAmount,
+            status: 'pending',
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
-        logger.info(`📝 Pedido criado no banco. ID: ${orderRef.id}`);
-        // 2. CONFIGURAR PREFERÊNCIA COM "EXTERNAL_REFERENCE"
-        const client = new mercadopago_1.MercadoPagoConfig({ accessToken: accessToken });
+        // 5. Configurar Mercado Pago
+        const client = new mercadopago_1.MercadoPagoConfig({
+            accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN,
+        });
         const preference = new mercadopago_1.Preference(client);
+        // 6. Criar Preferência com external_reference
         const result = await preference.create({
             body: {
-                items: [
-                    {
-                        id: product.id,
-                        title: product.name,
-                        quantity: 1,
-                        unit_price: price,
-                        picture_url: ((_a = product.images) === null || _a === void 0 ? void 0 : _a[0]) || '',
-                        currency_id: 'BRL'
-                    },
-                ],
-                // AQUI ESTÁ O TRUQUE: Ligamos o pagamento ao nosso ID do banco
-                external_reference: orderRef.id,
-                payment_methods: {
-                    excluded_payment_types: [],
-                    excluded_payment_methods: [],
-                    installments: 12
+                items: validatedItems,
+                payer: {
+                    email: userEmail,
                 },
+                // AQUI ESTÁ O SEGREDO: Vinculamos o ID do pedido do Firestore ao MP
+                external_reference: orderRef.id,
                 back_urls: {
-                    success: "https://seu-site.web.app/sucesso", // Vamos criar essa página já já
-                    failure: "https://seu-site.web.app/falha",
-                    pending: "https://seu-site.web.app/pendente",
+                    // Substitua pelo seu ID do projeto real
+                    success: "https://empresa-site-prod.web.app/sucesso",
+                    failure: "https://empresa-site-prod.web.app/falha",
+                    pending: "https://empresa-site-prod.web.app/pendente",
                 },
                 auto_return: "approved",
-                // Configura o Webhook para onde o MP deve gritar (substitua URL depois do deploy)
-                notification_url: `https://us-central1-${process.env.GCLOUD_PROJECT}.cloudfunctions.net/paymentWebhook`
-            }
+            },
         });
-        return {
-            init_point: result.init_point,
-            sandbox_init_point: result.sandbox_init_point,
-            orderId: orderRef.id // Retornamos o ID do pedido para o frontend saber
-        };
+        return { init_point: result.init_point };
     }
     catch (error) {
-        logger.error("❌ ERRO CRÍTICO MP:", error);
-        throw new https_1.HttpsError('internal', `Erro: ${error.message}`);
+        logger.error("Erro no checkout:", error);
+        throw new https_1.HttpsError('internal', 'Falha ao criar pagamento.');
     }
 });
 // ==========================================
 // 3. WEBHOOK (OUVINTE DE PAGAMENTOS)
 // ==========================================
-exports.paymentWebhook = (0, https_2.onRequest)({ secrets: ["MERCADOPAGO_ACCESS_TOKEN"] }, async (req, res) => {
+exports.paymentWebhook = (0, https_1.onRequest)({ secrets: ["MERCADOPAGO_ACCESS_TOKEN"] }, async (req, res) => {
     const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
     if (!accessToken) {
-        logger.error("Token não configurado");
-        res.status(500).send("Server Error");
+        logger.error("Token MP ausente.");
+        res.status(500).send("Config Error");
         return;
     }
-    // O MP manda uma query string tipo: ?id=12345&topic=payment
+    // Extração dos dados da query ou body
     const { type, data } = req.body;
+    // O MP pode mandar o ID na query string ou no body data
     const queryId = req.query.id || req.query['data.id'];
     const topic = req.query.topic || type;
-    // Só nos interessa se for notificação de pagamento
-    if (topic === 'payment') {
-        const paymentId = (data === null || data === void 0 ? void 0 : data.id) || queryId;
-        logger.info(`🔔 Webhook recebido! Payment ID: ${paymentId}`);
+    // Prioriza o ID que vier (Query ou Body)
+    const paymentId = (data === null || data === void 0 ? void 0 : data.id) || queryId;
+    // Se for notificação de pagamento
+    if (topic === 'payment' && paymentId) {
+        logger.info(`🔔 Webhook: Verificando Pagamento ${paymentId}`);
         try {
-            // 1. Consultar o Mercado Pago para confirmar o status real (Segurança)
-            // Nunca confie apenas no req.body, vá na fonte checar.
             const client = new mercadopago_1.MercadoPagoConfig({ accessToken: accessToken });
-            const paymentClient = new mercadopago_2.Payment(client);
+            const paymentClient = new mercadopago_1.Payment(client);
+            // Consulta a API do MP para garantir status real
             const payment = await paymentClient.get({ id: String(paymentId) });
-            // 2. Se aprovado, atualizar o Firestore
             if (payment.status === 'approved') {
-                const orderId = payment.external_reference; // Recuperamos nosso ID
+                // Recupera o ID do pedido que enviamos no passo 6 do createPayment
+                const orderId = payment.external_reference;
                 if (orderId) {
                     logger.info(`✅ Pagamento Aprovado! Atualizando pedido ${orderId}`);
                     await exports.db.collection('orders').doc(orderId).update({
                         status: 'paid',
                         paidAt: admin.firestore.FieldValue.serverTimestamp(),
                         mercadoPagoId: payment.id,
-                        paymentMethod: payment.payment_method_id
+                        paymentMethod: payment.payment_method_id,
+                        cardDetails: payment.card || null // Salva detalhes básicos do cartão se houver
                     });
                 }
                 else {
-                    logger.warn("⚠️ Pagamento aprovado sem external_reference");
+                    logger.warn("⚠️ Pagamento sem external_reference (Order ID).");
                 }
             }
-            // Responder 200 OK para o Mercado Pago parar de mandar notificação
             res.status(200).send("OK");
         }
         catch (error) {
-            logger.error("Erro no Webhook:", error);
-            res.status(500).send("Erro interno");
+            logger.error("Erro ao processar Webhook:", error);
+            // Retornar 200 mesmo com erro para evitar retentativas infinitas do MP se for erro de lógica nossa
+            res.status(200).send("Error handled");
         }
     }
     else {
-        // Outros tópicos (merchant_order, etc) apenas ignoramos com 200 OK
+        // Ignora tópicos que não sejam pagamento
         res.status(200).send("Ignored");
     }
 });

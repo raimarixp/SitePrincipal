@@ -1,13 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.productsData = void 0;
-// Mesmos dados do frontend, mas agora no backend
 exports.productsData = [
     {
         id: '1',
         name: 'Headphone Noise Cancelling Pro',
         description: 'Isolamento acústico premium com bateria de 30h.',
         price: 1299.90,
+        // Note o inicio da URL completo:
         images: ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=600'],
         category: 'Áudio',
         featured: true,
