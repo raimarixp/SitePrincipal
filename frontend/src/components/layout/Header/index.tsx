@@ -7,13 +7,15 @@ import { cn } from '../../../utils/helpers';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useCart } from '../../../contexts/CartContext';
 
-// 👇 NOVOS IMPORTS para verificar o banco de dados
+// Imports do Firebase para verificar Admin
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../../services/firebase';
 
+// ✅ ATUALIZAÇÃO: Adicionado 'Portfólio' na navegação
 const navigation = [
   { name: 'Início', href: '/' },
   { name: 'Produtos', href: '/produtos' },
+  { name: 'Portfólio', href: '/portfolio' }, // Nova aba
   { name: 'Sobre', href: '/sobre' },
   { name: 'Contato', href: '/contato' },
 ];
@@ -21,7 +23,7 @@ const navigation = [
 export const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false); // 👇 Novo estado para controlar visibilidade
+  const [isAdmin, setIsAdmin] = useState(false);
   const location = useLocation();
   
   const { user, signOut } = useAuth();
@@ -33,7 +35,7 @@ export const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 👇 EFEITO NOVO: Verifica se o usuário é Admin no Firestore
+  // Verifica se o usuário é Admin no Firestore
   useEffect(() => {
     const checkAdminStatus = async () => {
       if (!user) {
@@ -44,7 +46,6 @@ export const Header = () => {
         const userDocRef = doc(db, 'users', user.uid);
         const userDocSnap = await getDoc(userDocRef);
         
-        // Verifica se existe e se a role é 'admin'
         if (userDocSnap.exists() && userDocSnap.data().role === 'admin') {
           setIsAdmin(true);
         } else {
@@ -57,7 +58,7 @@ export const Header = () => {
     };
 
     checkAdminStatus();
-  }, [user]); // Roda sempre que o usuário mudar (logar/deslogar)
+  }, [user]);
 
   const CartIcon = () => (
     <Link to="/carrinho" className="group -m-2 flex items-center p-2">
@@ -86,12 +87,14 @@ export const Header = () => {
     )}>
       <nav className="container mx-auto px-4 sm:px-6 flex items-center justify-between py-4" aria-label="Global">
         
+        {/* LOGO */}
         <div className="flex lg:flex-1">
           <Link to="/" className="-m-1.5 p-1.5 text-2xl font-black tracking-tighter text-gray-900">
-            EMPRESA<span className="text-primary">.</span>
+            WebCraftBr<span className="text-primary">.</span>
           </Link>
         </div>
 
+        {/* ÍCONES MOBILE (Carrinho + Menu Hamburguer) */}
         <div className="flex lg:hidden items-center gap-4">
           <CartIcon />
           <button
@@ -104,6 +107,7 @@ export const Header = () => {
           </button>
         </div>
 
+        {/* MENU DESKTOP CENTRAL */}
         <div className="hidden lg:flex lg:gap-x-8">
           {navigation.map((item) => (
             <Link
@@ -119,9 +123,10 @@ export const Header = () => {
           ))}
         </div>
 
+        {/* ÁREA DO USUÁRIO DESKTOP */}
         <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center gap-6">
           
-          {/* 👇 MUDANÇA: Agora verificamos 'isAdmin' em vez de apenas 'user' */}
+          {/* Link Admin (Só aparece se for admin) */}
           {isAdmin && (
             <Link to="/admin" className="group -m-2 flex items-center p-2" title="Painel Administrativo">
               <Cog6ToothIcon 
@@ -177,7 +182,6 @@ export const Header = () => {
                     )}
                   </Menu.Item>
                   
-                  {/* 👇 MUDANÇA: Link Admin no Dropdown também protegido */}
                   {isAdmin && (
                     <Menu.Item>
                       {({ active }) => (
@@ -209,13 +213,13 @@ export const Header = () => {
         </div>
       </nav>
 
-      {/* MENU MOBILE */}
+      {/* MENU MOBILE (Slide-over) */}
       <Dialog as="div" className="lg:hidden" open={mobileMenuOpen} onClose={setMobileMenuOpen}>
         <div className="fixed inset-0 z-50" />
         <Dialog.Panel className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10">
           <div className="flex items-center justify-between">
             <Link to="/" className="-m-1.5 p-1.5 text-2xl font-black text-gray-900">
-              EMPRESA<span className="text-primary">.</span>
+              WebCraftBr<span className="text-primary">.</span>
             </Link>
             <button
               type="button"
@@ -229,6 +233,7 @@ export const Header = () => {
           <div className="mt-6 flow-root">
             <div className="-my-6 divide-y divide-gray-500/10">
               <div className="space-y-2 py-6">
+                {/* Links de Navegação Mobile */}
                 {navigation.map((item) => (
                   <Link
                     key={item.name}
@@ -240,6 +245,7 @@ export const Header = () => {
                   </Link>
                 ))}
               </div>
+              
               <div className="py-6">
                 {user ? (
                   <>
@@ -257,7 +263,6 @@ export const Header = () => {
                       </div>
                     </div>
                     
-                    {/* 👇 MUDANÇA: Link Admin Mobile protegido */}
                     {isAdmin && (
                       <Link
                         to="/admin"

@@ -70,7 +70,7 @@ export const AboutSection = () => {
               
               {/* Card Flutuante de Estatística */}
               <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-md p-6 rounded-2xl shadow-xl hidden md:block border border-gray-100">
-                <p className="text-4xl font-black text-primary mb-1">+500</p>
+                <p className="text-4xl font-black text-primary mb-1">+5</p>
                 <p className="text-sm font-bold text-gray-600 uppercase tracking-wide">Projetos Entregues</p>
               </div>
             </div>

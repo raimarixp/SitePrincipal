@@ -18,7 +18,7 @@ const slides = [
   {
     id: 2,
     // Imagem: Dashboard / Gestão
-    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1920',
+    image: 'https://i.ibb.co/WCq34Hw/Gemini-Generated-Image-b6eymyb6eymyb6ey.png',
     title: 'Gestão Inteligente & Ponto Eletrônico',
     subtitle: 'Sistemas completos para RH e controle de ponto com integração biométrica e relatórios em tempo real.',
     cta: 'Ver Sistema de Ponto',
@@ -27,7 +27,7 @@ const slides = [
   {
     id: 3,
     // Imagem: Design / Web
-    image: 'https://images.unsplash.com/photo-1664575602554-2087b04935a5?auto=format&fit=crop&q=80&w=1920',
+    image: 'https://i.ibb.co/rfNwyk6v/convers-p.png', // Imagem alternativa
     title: 'Sites que Convertem Visitantes em Clientes',
     subtitle: 'Websites institucionais e Landing Pages de alta performance, otimizados para SEO e mobile.',
     cta: 'Solicitar Orçamento',
@@ -42,7 +42,7 @@ export const HeroCarousel = () => {
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrent((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
-    }, 6000); // Aumentei levemente para 6s para dar tempo de ler
+    }, 8000); // Aumentei levemente para 8s para dar tempo de ler
 
     return () => clearInterval(timer);
   }, []);

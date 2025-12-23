@@ -10,6 +10,13 @@ export interface Product {
   featured: boolean;
   stock: number;
   isQuoteOnly?: boolean;
+  // Controle de Orçamento
+  requiresQuote?: boolean;
+  isConsultation?: boolean;
+
+  // ✨ NOVOS CAMPOS
+  features?: string[]; // Array para a lista de checkmarks (ex: ["SEO Otimizado", "Design Responsivo"])
+  demoUrl?: string;    // URL para ver o site modelo ao vivo (Portfólio)
 }
 
 export interface CartItem extends Product {

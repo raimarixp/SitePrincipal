@@ -1,32 +1,24 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { TrashIcon, MinusIcon, PlusIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
-import { useCart } from '../../contexts/CartContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { TrashIcon, MinusIcon, PlusIcon, ArrowLeftIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
+import { useCart } from '../../contexts/CartContext'; // Caminho corrigido para o contexto
+import { useAuth } from '../../contexts/AuthContext'; // Caminho corrigido para o auth
 import { Button } from '../../components/ui/Button';
 import { formatPrice } from '../../utils/helpers';
-import { useState } from 'react';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../services/firebase';
 
 export const Cart = () => {
-  const { cart, removeFromCart, addToCart, total, clearCart } = useCart();
+  // ✅ Recuperando updateQuantity do Contexto para corrigir o erro de "remover tudo"
+  const { cart, removeFromCart, updateQuantity, total } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
-  // Função para diminuir quantidade (lógica local simples)
-  const decreaseQuantity = (item: any) => {
-    if (item.quantity > 1) {
-       // Em um app real, teríamos um método updateQuantity no context
-       // Aqui, vamos usar um hack simples removendo e readicionando N-1 vezes
-       // (Idealmente, adicione updateQuantity no CartContext depois)
-       console.log("Para diminuir, implemente updateQuantity no Context");
-    } else {
-      removeFromCart(item.id);
-    }
-  };
-
+  // === LÓGICA DE CHECKOUT (MERCADO PAGO) ===
   const handleCheckout = async () => {
+    // 1. Verifica Login
     if (!user) {
       navigate('/login', { state: { from: location } });
       return;
@@ -34,177 +26,211 @@ export const Cart = () => {
 
     setIsCheckingOut(true);
     try {
-      console.log("🛒 Preparando carrinho...");
+      console.log("🛒 Preparando checkout...");
 
-      // SANITIZAÇÃO DE DADOS (Limpeza pesada)
+      // 2. Sanitização de Dados (Evita erros 400 do Mercado Pago)
       const cleanItems = cart.map(item => {
-        // 1. Garante que preço é número e tem 2 casas decimais
         const price = Number(item.price);
         
-        // 2. Garante URL da imagem válida (MP rejeita 404 ou urls relativas)
+        // Garante URL válida ou fallback
         let imgUrl = item.images?.[0] || '';
         if (imgUrl && !imgUrl.startsWith('http')) {
-          // Se for antiga, tenta consertar ou usa placeholder
           imgUrl = `https://images.unsplash.com/${imgUrl.replace('https://images.unsplash.com/', '')}`;
         }
-        // Fallback final se não tiver imagem
         if (!imgUrl) imgUrl = 'https://www.mercadopago.com/org-img/MP3/home/logomp3.gif';
 
         return {
           id: item.id,
-          title: item.name || 'Produto sem nome', // Garante título
+          title: item.name || 'Produto',
           unit_price: price, 
           quantity: Number(item.quantity),
-          picture_url: imgUrl
+          picture_url: imgUrl,
+          currency_id: 'BRL'
         };
       });
 
-      // Validação Extra: Remove itens com preço zero ou negativo
+      // Remove itens inválidos
       const validItems = cleanItems.filter(i => i.unit_price > 0 && i.quantity > 0);
 
       if (validItems.length === 0) {
-        alert("Erro: Carrinho sem itens válidos (preço zerado?).");
+        alert("Erro: Carrinho sem itens válidos.");
         setIsCheckingOut(false);
         return;
       }
 
-      console.log("📦 Payload Limpo enviado:", validItems);
-
+      // 3. Chamada Serverless (Firebase Functions)
       const createPaymentFn = httpsCallable(functions, 'createPayment');
-      
-      // Enviamos 'items' (plural)
       const response = await createPaymentFn({ items: validItems });
-
       const data = response.data as any;
-      const link = data.sandbox_init_point || data.init_point;
+      const link = data.sandbox_init_point || data.init_point; // Sandbox para testes
 
       if (link) {
-        window.location.href = link;
+        window.location.href = link; // Redireciona para o Mercado Pago
       } else {
         throw new Error("Backend não retornou link de pagamento");
       }
 
     } catch (error: any) {
       console.error("❌ Erro Checkout:", error);
-      // Mostra o erro real que veio do Backend (se houver)
-      const message = error.message || "Erro desconhecido";
-      alert(`Falha no pagamento: ${message}`);
+      alert(`Falha ao iniciar pagamento: ${error.message || "Tente novamente mais tarde."}`);
     } finally {
       setIsCheckingOut(false);
     }
   };
 
+  // === ESTADO DE CARRINHO VAZIO (NOVO DESIGN) ===
   if (cart.length === 0) {
     return (
-      <div className="min-h-screen pt-32 pb-12 flex flex-col items-center justify-center px-4">
-        <div className="bg-gray-100 p-6 rounded-full mb-4">
-          <TrashIcon className="h-10 w-10 text-gray-400" />
+      <div className="min-h-screen pt-24 pb-12 flex flex-col items-center justify-center px-4 bg-gray-50">
+        <div className="w-full max-w-lg bg-gradient-to-br from-pink-600 to-red-600 rounded-2xl shadow-xl p-8 text-center flex flex-col items-center">
+          <div className="bg-white/20 p-6 rounded-full mb-6 backdrop-blur-sm animate-pulse">
+            <ShoppingBagIcon className="h-12 w-12 text-white" />
+          </div>
+          
+          <h2 className="text-3xl font-bold text-white mb-3">
+            Seu carrinho está vazio
+          </h2>
+          
+          <p className="text-white/80 text-lg mb-8 max-w-sm">
+            Parece que você ainda não escolheu seus produtos favoritos.
+          </p>
+
+          <Link to="/produtos" className="w-full sm:w-auto">
+            <Button className="bg-white text-red-600 hover:bg-gray-100 border-none px-8 py-3 text-lg font-bold">
+              Começar a Comprar
+            </Button>
+          </Link>
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Seu carrinho está vazio</h2>
-        <p className="text-gray-500 mb-8">Parece que você ainda não adicionou nenhum produto.</p>
-        <Link to="/produtos">
-          <Button>Começar a Comprar</Button>
-        </Link>
       </div>
     );
   }
 
+  // === CARRINHO COM ITENS ===
   return (
     <div className="min-h-screen pt-32 pb-12 bg-gray-50">
-      <div className="container mx-auto px-6">
-        <h1 className="text-3xl font-bold mb-8 flex items-center gap-4">
+      <div className="container mx-auto px-4 sm:px-6">
+        <h1 className="text-3xl font-bold mb-8 flex items-center gap-3 text-gray-900">
           Carrinho de Compras
-          <span className="text-sm font-normal text-gray-500 bg-white px-3 py-1 rounded-full border">
+          <span className="text-sm font-normal text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200 shadow-sm">
             {cart.reduce((acc, item) => acc + item.quantity, 0)} itens
           </span>
         </h1>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Lista de Itens */}
+          {/* === LISTA DE PRODUTOS === */}
           <div className="lg:col-span-2 space-y-4">
             {cart.map((item) => (
-              <div key={item.id} className="bg-white p-4 rounded-xl shadow-sm flex gap-4 items-center">
-                <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
+              <div key={item.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex gap-4 items-center">
+                {/* Imagem */}
+                <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
                   <img
-                    src={item.images[0]}
+                    src={item.images?.[0]}
                     alt={item.name}
                     className="h-full w-full object-cover object-center"
                   />
                 </div>
 
-                <div className="flex-1 flex flex-col justify-between self-stretch py-1">
-                  <div className="flex justify-between">
-                    <div>
-                      <h3 className="text-base font-medium text-gray-900 line-clamp-1">
-                        <Link to={`/produtos/${item.id}`}>{item.name}</Link>
-                      </h3>
-                      <p className="mt-1 text-sm text-gray-500">{item.category}</p>
-                    </div>
-                    <p className="text-base font-bold text-gray-900">
+                {/* Detalhes */}
+                <div className="flex-1 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                  <div className="flex-1">
+                    <h3 className="text-base font-semibold text-gray-900 line-clamp-1">
+                      <Link to={`/produtos/${item.id}`} className="hover:text-primary transition-colors">
+                        {item.name}
+                      </Link>
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-1">{item.category}</p>
+                    <p className="text-lg font-bold text-primary mt-1 sm:hidden">
                       {formatPrice(item.price * item.quantity)}
                     </p>
                   </div>
-                  
-                  <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center border border-gray-300 rounded-lg">
+
+                  {/* Controles de Quantidade */}
+                  <div className="flex items-center gap-6">
+                    <div className="flex items-center border border-gray-300 rounded-lg bg-gray-50">
+                      {/* Botão MENOS: Chama updateQuantity com -1 */}
                       <button 
-                        onClick={() => removeFromCart(item.id)} // Simplificado para remover
-                        className="p-1 hover:bg-gray-100 text-gray-600"
-                        title="Remover"
+                        onClick={() => updateQuantity(item.id, -1)}
+                        className="p-2 hover:bg-gray-200 text-gray-600 rounded-l-lg transition-colors disabled:opacity-50"
+                        disabled={item.quantity <= 1} // Impede chegar a 0 aqui (opcional)
+                        title="Diminuir quantidade"
                       >
-                        <TrashIcon className="h-4 w-4" />
+                        <MinusIcon className="h-4 w-4" />
                       </button>
-                      <span className="px-3 py-1 text-sm font-semibold border-l border-r border-gray-300 bg-gray-50">
-                        {item.quantity} un
+                      
+                      <span className="w-10 text-center text-sm font-semibold text-gray-900">
+                        {item.quantity}
                       </span>
+                      
+                      {/* Botão MAIS: Chama updateQuantity com +1 */}
                       <button 
-                        onClick={() => addToCart(item)}
-                        className="p-1 hover:bg-gray-100 text-primary"
+                        onClick={() => updateQuantity(item.id, 1)}
+                        className="p-2 hover:bg-gray-200 text-primary rounded-r-lg transition-colors"
+                        title="Aumentar quantidade"
                       >
                         <PlusIcon className="h-4 w-4" />
                       </button>
                     </div>
+
+                    {/* Preço Desktop */}
+                    <div className="hidden sm:block text-right min-w-[100px]">
+                      <p className="text-lg font-bold text-gray-900">
+                        {formatPrice(item.price * item.quantity)}
+                      </p>
+                    </div>
+
+                    {/* Botão LIXEIRA: Remove item inteiro */}
+                    <button 
+                      onClick={() => removeFromCart(item.id)}
+                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+                      title="Remover produto"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </button>
                   </div>
                 </div>
               </div>
             ))}
             
-            <Link to="/produtos" className="inline-flex items-center text-sm text-primary hover:underline mt-4 font-medium">
-              <ArrowLeftIcon className="h-4 w-4 mr-1" />
+            <Link to="/produtos" className="inline-flex items-center text-primary hover:text-primary-dark font-medium mt-4 group">
+              <ArrowLeftIcon className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
               Continuar Comprando
             </Link>
           </div>
 
-          {/* Resumo do Pedido */}
+          {/* === RESUMO DO PEDIDO === */}
           <div className="lg:col-span-1">
-            <div className="bg-white p-6 rounded-xl shadow-sm sticky top-24">
-              <h2 className="text-lg font-bold text-gray-900 mb-6">Resumo do Pedido</h2>
+            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 sticky top-28">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">Resumo do Pedido</h2>
 
               <div className="space-y-4 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal</span>
-                  <span className="font-medium text-gray-900">{formatPrice(total)}</span>
+                <div className="flex justify-between text-gray-600">
+                  <span>Subtotal</span>
+                  <span>{formatPrice(total)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Frete</span>
+                <div className="flex justify-between text-gray-600">
+                  <span>Frete</span>
                   <span className="text-green-600 font-medium">Grátis</span>
                 </div>
-                <div className="border-t pt-4 flex justify-between items-center">
-                  <span className="text-base font-bold text-gray-900">Total</span>
-                  <span className="text-xl font-bold text-primary">{formatPrice(total)}</span>
+                <div className="border-t border-gray-200 pt-4 flex justify-between items-center">
+                  <span className="text-lg font-bold text-gray-900">Total</span>
+                  <span className="text-2xl font-bold text-primary">{formatPrice(total)}</span>
                 </div>
               </div>
 
-              <div className="mt-8 space-y-3">
+              <div className="mt-8 space-y-4">
                 <Button 
-                  className="w-full h-12 text-lg shadow-lg shadow-primary/20"
+                  className="w-full h-14 text-lg font-bold shadow-lg shadow-primary/25 transition-all hover:scale-[1.02]"
                   onClick={handleCheckout}
                   isLoading={isCheckingOut}
                 >
                   Finalizar Compra
                 </Button>
-                <div className="text-xs text-center text-gray-500 mt-4 flex items-center justify-center gap-2">
-                  <span className="bg-gray-100 px-2 py-1 rounded">🔒 Ambiente Seguro</span>
+                
+                <div className="flex items-center justify-center gap-2 text-xs text-gray-500 bg-gray-50 py-2 rounded-lg">
+                  <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  Pagamento 100% Seguro via Mercado Pago
                 </div>
               </div>
             </div>

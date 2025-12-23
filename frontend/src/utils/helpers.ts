@@ -13,3 +13,10 @@ export const formatPrice = (price: number) => {
     currency: 'BRL',
   }).format(price);
 };
+
+// Função para criar link de WhatsApp para orçamento
+export const createWhatsAppLink = (productName: string) => {
+  const phone = "5568999082029"; // SUBSTITUA PELO SEU NÚMERO (apenas números)
+  const message = `Olá! Gostaria de solicitar um orçamento para o produto: *${productName}*.`;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+};

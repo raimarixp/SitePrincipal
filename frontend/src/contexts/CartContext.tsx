@@ -1,6 +1,6 @@
 import { createContext, type ReactNode, useState, useEffect, useContext } from 'react';
 
-// === TIPAGENS ===
+// === TIPAGENS (Podem ser exportadas sem problemas) ===
 export interface Product {
   id: string;
   name: string;
@@ -9,7 +9,7 @@ export interface Product {
   category: string;
   description?: string;
   stock?: number;
-  featured?: boolean;
+  requiresQuote?: boolean;
 }
 
 export interface CartItem extends Product {
@@ -18,8 +18,8 @@ export interface CartItem extends Product {
 
 interface CartContextData {
   cart: CartItem[];
-  addItem: (product: Product) => void;
-  removeItem: (productId: string) => void;
+  addToCart: (product: Product) => void;
+  removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, amount: number) => void;
   clearCart: () => void;
   total: number;
@@ -30,59 +30,70 @@ interface CartProviderProps {
   children: ReactNode;
 }
 
-// === CRIAÇÃO DO CONTEXTO ===
-export const CartContext = createContext<CartContextData>({} as CartContextData);
+// === CRIAÇÃO DO CONTEXTO (SEM EXPORT) ===
+// Mudança aqui: Removemos o 'export'. O Contexto agora é privado deste arquivo.
+const CartContext = createContext<CartContextData>({} as CartContextData);
 
-// === PROVIDER (O Cérebro do Carrinho) ===
+// === PROVIDER ===
 export function CartProvider({ children }: CartProviderProps) {
   const [cart, setCart] = useState<CartItem[]>(() => {
-    // Tenta recuperar do LocalStorage ao iniciar
-    const storagedCart = localStorage.getItem('@Empresa:cart');
-
-    if (storagedCart) {
-      return JSON.parse(storagedCart);
+    if (typeof window !== 'undefined') {
+      const storagedCart = localStorage.getItem('@Empresa:cart');
+      if (storagedCart) {
+        try {
+          return JSON.parse(storagedCart);
+        } catch (e) {
+          console.error("Erro ao ler carrinho", e);
+          return [];
+        }
+      }
     }
-
     return [];
   });
 
-  // Salva no LocalStorage sempre que o carrinho mudar
   useEffect(() => {
-    localStorage.setItem('@Empresa:cart', JSON.stringify(cart));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('@Empresa:cart', JSON.stringify(cart));
+    }
   }, [cart]);
 
-  const addItem = (product: Product) => {
-    const productInCart = cart.find(item => item.id === product.id);
+  const addToCart = (product: Product) => {
 
-    if (productInCart) {
-      // Se já existe, aumenta a quantidade
-      const updatedCart = cart.map(item => 
-        item.id === product.id 
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
-      );
-      setCart(updatedCart);
-    } else {
-      // Se não existe, adiciona com quantidade 1
-      setCart([...cart, { ...product, quantity: 1 }]);
-    }
+    // 🔒 BLOQUEIO DE SEGURANÇA
+    if (product.requiresQuote) {
+    console.warn("Este produto requer orçamento e não pode ser adicionado ao carrinho.");
+    return;
+  }
+
+    setCart((prevCart) => {
+      const productInCart = prevCart.find(item => item.id === product.id);
+
+      if (productInCart) {
+        return prevCart.map(item => 
+          item.id === product.id 
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+
+      return [...prevCart, { ...product, quantity: 1 }];
+    });
   };
 
-  const removeItem = (productId: string) => {
-    const updatedCart = cart.filter(item => item.id !== productId);
-    setCart(updatedCart);
+  const removeFromCart = (productId: string) => {
+    setCart((prevCart) => prevCart.filter(item => item.id !== productId));
   };
 
   const updateQuantity = (productId: string, amount: number) => {
-    const updatedCart = cart.map(item => {
-      if (item.id === productId) {
-        const newQuantity = item.quantity + amount;
-        if (newQuantity <= 0) return item; // Não deixa baixar de 1
-        return { ...item, quantity: newQuantity };
-      }
-      return item;
+    setCart((prevCart) => {
+      return prevCart.map(item => {
+        if (item.id === productId) {
+          const newQuantity = item.quantity + amount;
+          return { ...item, quantity: newQuantity > 0 ? newQuantity : 1 };
+        }
+        return item;
+      });
     });
-    setCart(updatedCart);
   };
 
   const clearCart = () => {
@@ -90,7 +101,6 @@ export function CartProvider({ children }: CartProviderProps) {
     localStorage.removeItem('@Empresa:cart');
   };
 
-  // Cálculos
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -98,8 +108,8 @@ export function CartProvider({ children }: CartProviderProps) {
     <CartContext.Provider 
       value={{ 
         cart, 
-        addItem, 
-        removeItem, 
+        addToCart, 
+        removeFromCart, 
         updateQuantity, 
         clearCart, 
         total, 
@@ -111,8 +121,8 @@ export function CartProvider({ children }: CartProviderProps) {
   );
 }
 
-// === HOOK PERSONALIZADO (A SOLUÇÃO DO SEU ERRO) ===
-// Agora exportamos o useCart diretamente daqui!
+// === HOOK ===
+// Esta é a única forma de acessar o contexto agora.
 export const useCart = () => {
   const context = useContext(CartContext);
 
