@@ -1,6 +1,3 @@
-import { Disclosure } from '@headlessui/react';
-import { MinusIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { cn } from '../../../utils/helpers'; // Certifique-se que o helper existe ou remova o cn
 
 interface FilterSidebarProps {
   selectedCategory: string | null;

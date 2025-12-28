@@ -1,19 +1,59 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // This rule allows anyone with your Firestore database reference to view, edit,
-    // and delete all data in your Firestore database. It is useful for getting
-    // started, but it is configured to expire after 30 days because it
-    // leaves your app open to attackers. At that time, all client
-    // requests to your Firestore database will be denied.
-    //
-    // Make sure to write security rules for your app before that time, or else
-    // all client requests to your Firestore database will be denied until you Update
-    // your rules
-    match /{document=**} {
-      allow read, write: if request.time < timestamp.date(2026, 1, 7);
+    // --- FUNÇÕES AUXILIARES ---
+
+    // Verifica se o usuário está logado e tem a role 'admin'
+    function isAdmin() {
+      return request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Verifica se o usuário logado é o dono do documento (baseado no ID do documento)
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // --- REGRAS DAS COLEÇÕES ---
+
+    // 1. PRODUTOS & SERVIÇOS
+    // Qualquer um vê o catálogo. Apenas Admin cria, edita ou exclui.
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 2. PEDIDOS (ORDERS)
+    match /orders/{orderId} {
+      // Leitura: Admin vê tudo. Usuário vê apenas os pedidos onde userId == seu ID.
+      allow read: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
+      
+      // Criação: Usuário logado pode criar, DESDE QUE o pedido esteja no nome dele.
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      
+      // Atualização: Apenas Admin pode alterar status, código de rastreio, etc.
+      allow update: if isAdmin();
+    }
+
+    // 3. USUÁRIOS (PERFIL)
+    match /users/{userId} {
+      // Leitura: O próprio usuário ou Admin.
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // Escrita: O usuário pode criar/editar seu próprio perfil. Admin edita qualquer um.
+      // (Isso permite que o registro inicial funcione)
+      allow write: if isOwner(userId) || isAdmin();
+    }
+
+    // 4. MENSAGENS DE CONTATO
+    match /messages/{messageId} {
+      // Qualquer pessoa (mesmo deslogada) pode enviar mensagem pelo formulário.
+      allow create: if true;
+      
+      // Apenas Admin pode ler ou apagar as mensagens recebidas.
+      allow read, update, delete: if isAdmin();
     }
   }
 }
