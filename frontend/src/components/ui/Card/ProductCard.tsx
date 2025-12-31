@@ -1,13 +1,15 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
   ShoppingBagIcon, 
-  CreditCardIcon, 
-  ChatBubbleLeftRightIcon 
+  ChatBubbleLeftRightIcon,
+  EyeIcon // Ícone novo para "Ver Detalhes"
 } from '@heroicons/react/24/outline';
+
 import { useCart } from '../../../contexts/CartContext';
 import { formatPrice, createWhatsAppLink } from '../../../utils/helpers';
-import { useCheckout } from '../../../hooks/useCheckout';
 
+// Interfaces
 export interface Product {
   id: string;
   name: string;
@@ -27,7 +29,6 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product }: ProductCardProps) => {
   const { addToCart } = useCart();
-  const { handleCheckout, isLoading } = useCheckout();
 
   // Verifica se é orçamento
   const isQuote = Boolean(product.requiresQuote) || Boolean(product.isConsultation);
@@ -38,23 +39,17 @@ export const ProductCard = ({ product }: ProductCardProps) => {
     addToCart(product);
   };
 
-  const handleBuyNow = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (isQuote) return;
-    await handleCheckout([{ id: product.id, quantity: 1 }]);
-  };
-
   return (
-    // 1. Mudamos o elemento pai de <Link> para <div>
-    // Movemos as classes de estilo do card para aqui
+    // 1. Elemento pai (Card Wrapper)
     <div className="group relative flex flex-col h-full bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100">
       
-      {/* 2. Envolvemos a IMAGEM com o Link */}
+      {/* 2. Área da Imagem (Linkável) */}
       <Link to={`/produtos/${product.id}`} className="relative aspect-square overflow-hidden bg-gray-100 block">
-        <img
-          src={product.images[0]}
-          alt={product.name}
-          className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-110"
+        <img 
+          src={(product.images && product.images[0]) ? product.images[0] : '/placeholder.jpg'} 
+          alt={product.name} 
+          className="h-full w-full object-cover object-center group-hover:opacity-75 transition-opacity"
+          loading="lazy"
         />
         
         {/* Badge de Destaque */}
@@ -76,13 +71,13 @@ export const ProductCard = ({ product }: ProductCardProps) => {
         )}
       </Link>
 
-      {/* Info */}
+      {/* Info do Produto */}
       <div className="flex flex-1 flex-col p-6">
         <p className="text-sm text-gray-500 mb-2 font-medium uppercase tracking-wide">
           {product.category}
         </p>
         
-        {/* 3. Envolvemos o TÍTULO com o Link */}
+        {/* Título (Linkável) */}
         <h3 className="text-xl font-bold text-gray-900 flex-1 line-clamp-2 mb-4">
           <Link to={`/produtos/${product.id}`} className="hover:text-primary transition-colors">
             {product.name}
@@ -108,11 +103,11 @@ export const ProductCard = ({ product }: ProductCardProps) => {
             )}
           </div>
 
-          {/* Botões de Ação (Agora estão fora de qualquer Link pai) */}
+          {/* Botões de Ação */}
           <div className="flex gap-2 relative z-20">
             
             {isQuote ? (
-              /* Botão WhatsApp (é um <a>, agora permitido pois está dentro de uma div) */
+              /* Botão WhatsApp */
               <a
                 href={createWhatsAppLink(product.name)}
                 target="_blank"
@@ -124,27 +119,24 @@ export const ProductCard = ({ product }: ProductCardProps) => {
                 <span className="hidden sm:inline text-sm">Cotar</span>
               </a>
             ) : (
-              /* Botões Padrão */
+              /* Botões Padrão (Ver Detalhes + Adicionar ao Carrinho) */
               <>
+                {/* Botão Secundário: Ver Detalhes (Substitui o Comprar Agora) */}
+                <Link
+                  to={`/produtos/${product.id}`}
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-600 shadow-sm transition-all hover:bg-gray-200 hover:text-primary active:scale-95"
+                  title="Ver Detalhes"
+                >
+                  <EyeIcon className="h-6 w-6" />
+                </Link>
+
+                {/* Botão Primário: Adicionar ao Carrinho (Agora com destaque Azul) */}
                 <button
                   onClick={handleAddToCart}
-                  className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-600 shadow-sm transition-all hover:bg-gray-200 hover:text-primary active:scale-95"
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-white shadow-md hover:bg-blue-700 transition-colors active:scale-95"
                   title="Adicionar ao Carrinho"
                 >
                   <ShoppingBagIcon className="h-6 w-6" />
-                </button>
-
-                <button
-                  onClick={handleBuyNow}
-                  disabled={isLoading}
-                  className={`flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-md transition-all hover:bg-primary-hover hover:scale-110 active:scale-95 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
-                  title="Comprar Agora"
-                >
-                  {isLoading ? (
-                    <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <CreditCardIcon className="h-6 w-6" />
-                  )}
                 </button>
               </>
             )}

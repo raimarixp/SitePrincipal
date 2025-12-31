@@ -1,8 +1,9 @@
 import { useState, useEffect, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { XMarkIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, PlusIcon, TrashIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
-import { db } from '../../services/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../../services/firebase';
 import { Button } from '../../components/ui/Button';
 
 // Interface do Produto
@@ -28,17 +29,18 @@ interface ProductModalProps {
 
 export const ProductModal = ({ isOpen, onClose, productToEdit, onSuccess }: ProductModalProps) => {
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false); // Estado para upload de imagem
   
   // Estado do Formulário
   const [formData, setFormData] = useState<Product>({
     name: '',
     price: 0,
     description: '',
-    images: [''], // Começa com um campo de imagem vazio
+    images: [], // Array de imagens começa vazio
     category: 'Sites Institucionais',
     stock: 10,
     requiresQuote: false,
-    features: [''], // Começa com um feature vazio
+    features: [''],
     demoUrl: ''
   });
 
@@ -47,6 +49,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, onSuccess }: Prod
     if (productToEdit) {
       setFormData({
         ...productToEdit,
+        images: productToEdit.images || [],
         features: productToEdit.features || [''], // Garante que array exista
         demoUrl: productToEdit.demoUrl || '',
         requiresQuote: productToEdit.requiresQuote || false
@@ -54,7 +57,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, onSuccess }: Prod
     } else {
       // Reseta para criação
       setFormData({
-        name: '', price: 0, description: '', images: [''], 
+        name: '', price: 0, description: '', images: [], 
         category: 'Sites Institucionais', stock: 10, 
         requiresQuote: false, features: [''], demoUrl: ''
       });
@@ -86,9 +89,42 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, onSuccess }: Prod
     setFormData({ ...formData, features: newFeatures });
   };
 
-  // Gerencia URL da Imagem (Simplificado)
-  const handleImageChange = (value: string) => {
-    setFormData({ ...formData, images: [value] });
+  // === UPLOAD DE IMAGEM (Firebase Storage) ===
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      // Cria referência única: pasta products / timestamp-nomearquivo
+      const storageRef = ref(storage, `products/${Date.now()}-${file.name}`);
+      
+      // Envia o arquivo
+      await uploadBytes(storageRef, file);
+      
+      // Pega a URL pública
+      const downloadURL = await getDownloadURL(storageRef);
+
+      // Adiciona ao array de imagens
+      setFormData(prev => ({
+        ...prev,
+        images: [...prev.images, downloadURL]
+      }));
+
+    } catch (error) {
+      console.error("Erro ao enviar imagem:", error);
+      alert("Erro ao enviar imagem. Verifique sua conexão.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Remove uma imagem da lista
+  const removeImage = (indexToRemove: number) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, index) => index !== indexToRemove)
+    }));
   };
 
   // === SUBMIT (SALVAR) ===
@@ -144,7 +180,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, onSuccess }: Prod
                 <h3 className="text-lg font-bold leading-6 text-gray-900">
                   {productToEdit ? 'Editar Produto / Serviço' : 'Novo Produto / Serviço'}
                 </h3>
-                <button onClick={onClose}><XMarkIcon className="h-6 w-6 text-gray-400" /></button>
+                <button type="button" onClick={onClose}><XMarkIcon className="h-6 w-6 text-gray-400" /></button>
               </div>
 
               {/* Formulário */}
@@ -175,7 +211,6 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, onSuccess }: Prod
                       <option value="Sistemas de Gestão">Sistemas de Gestão</option>
                       <option value="Aplicativos Mobile">Aplicativos Mobile</option>
                       <option value="Consultoria">Consultoria</option>
-                      {/* 👇 A CHAVE MÁGICA PARA O PORTFÓLIO 👇 */}
                       <option value="Modelos">Modelos (Portfólio)</option>
                     </select>
                   </div>
@@ -190,7 +225,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, onSuccess }: Prod
                       name="price"
                       value={formData.price}
                       onChange={handleChange}
-                      disabled={formData.requiresQuote} // Desabilita se for orçamento
+                      disabled={formData.requiresQuote}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 disabled:bg-gray-100"
                     />
                   </div>
@@ -205,7 +240,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, onSuccess }: Prod
                       className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                     />
                     <label htmlFor="requiresQuote" className="ml-2 block text-sm text-gray-900">
-                      Requer Orçamento? (Oculta preço)
+                      Requer Orçamento?
                     </label>
                   </div>
 
@@ -234,18 +269,44 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, onSuccess }: Prod
                   />
                 </div>
 
-                {/* URL da Imagem */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">URL da Imagem</label>
-                  <input
-                    type="text"
-                    value={formData.images[0]}
-                    onChange={(e) => handleImageChange(e.target.value)}
-                    placeholder="https://exemplo.com/imagem.jpg"
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"
-                  />
-                  {formData.images[0] && (
-                    <img src={formData.images[0]} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded" />
+                {/* === UPLOAD DE IMAGEM === */}
+                <div className="space-y-4">
+                  <label className="block text-sm font-medium text-gray-700">Imagens do Produto</label>
+                  
+                  {/* Botão de Upload */}
+                  <div className="flex items-center gap-4">
+                    <label className={`cursor-pointer bg-white border border-gray-300 rounded-md px-4 py-2 flex items-center gap-2 hover:bg-gray-50 transition-colors ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                      <PhotoIcon className="h-5 w-5 text-gray-500" />
+                      <span className="text-sm text-gray-700">
+                        {uploading ? "Enviando..." : "Adicionar Foto"}
+                      </span>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={handleImageUpload}
+                        disabled={uploading}
+                      />
+                    </label>
+                  </div>
+
+                  {/* Grid de Preview das Imagens */}
+                  {formData.images.length > 0 && (
+                    <div className="grid grid-cols-3 gap-4 mt-2">
+                      {formData.images.map((img, index) => (
+                        <div key={index} className="relative group aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                          <img src={img} alt={`Preview ${index}`} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 shadow-sm"
+                            title="Remover imagem"
+                          >
+                            <XMarkIcon className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
 

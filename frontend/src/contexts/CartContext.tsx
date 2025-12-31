@@ -1,6 +1,6 @@
 import { createContext, type ReactNode, useState, useEffect, useContext } from 'react';
 
-// === TIPAGENS (Podem ser exportadas sem problemas) ===
+// === 1. TIPAGENS ===
 export interface Product {
   id: string;
   name: string;
@@ -9,34 +9,36 @@ export interface Product {
   category: string;
   description?: string;
   stock?: number;
+  featured?: boolean;
   requiresQuote?: boolean;
+  isConsultation?: boolean;
 }
 
 export interface CartItem extends Product {
   quantity: number;
 }
 
+// Interface que o restante do App espera receber
 interface CartContextData {
-  cart: CartItem[];
+  cartItems: CartItem[]; // Renomeado de 'cart' para 'cartItems' para compatibilidade
+  cartTotal: number;     // Renomeado de 'total' para 'cartTotal'
+  cartCount: number;
   addToCart: (product: Product) => void;
   removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, amount: number) => void;
+  updateQuantity: (productId: string, quantity: number) => void; // Alterado para receber a nova quantidade direta
   clearCart: () => void;
-  total: number;
-  cartCount: number;
 }
 
 interface CartProviderProps {
   children: ReactNode;
 }
 
-// === CRIAÇÃO DO CONTEXTO (SEM EXPORT) ===
-// Mudança aqui: Removemos o 'export'. O Contexto agora é privado deste arquivo.
+// === 2. CRIAÇÃO DO CONTEXTO ===
 const CartContext = createContext<CartContextData>({} as CartContextData);
 
-// === PROVIDER ===
+// === 3. PROVIDER ===
 export function CartProvider({ children }: CartProviderProps) {
-  const [cart, setCart] = useState<CartItem[]>(() => {
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
     if (typeof window !== 'undefined') {
       const storagedCart = localStorage.getItem('@Empresa:cart');
       if (storagedCart) {
@@ -51,21 +53,21 @@ export function CartProvider({ children }: CartProviderProps) {
     return [];
   });
 
+  // Persistência no LocalStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('@Empresa:cart', JSON.stringify(cart));
+      localStorage.setItem('@Empresa:cart', JSON.stringify(cartItems));
     }
-  }, [cart]);
+  }, [cartItems]);
 
   const addToCart = (product: Product) => {
+    // 🔒 BLOQUEIO DE SEGURANÇA (Mantido da sua lógica)
+    if (product.requiresQuote || product.isConsultation) {
+      console.warn("Este produto requer orçamento e não pode ser adicionado ao carrinho.");
+      return;
+    }
 
-    // 🔒 BLOQUEIO DE SEGURANÇA
-    if (product.requiresQuote) {
-    console.warn("Este produto requer orçamento e não pode ser adicionado ao carrinho.");
-    return;
-  }
-
-    setCart((prevCart) => {
+    setCartItems((prevCart) => {
       const productInCart = prevCart.find(item => item.id === product.id);
 
       if (productInCart) {
@@ -81,39 +83,42 @@ export function CartProvider({ children }: CartProviderProps) {
   };
 
   const removeFromCart = (productId: string) => {
-    setCart((prevCart) => prevCart.filter(item => item.id !== productId));
+    setCartItems((prevCart) => prevCart.filter(item => item.id !== productId));
   };
 
-  const updateQuantity = (productId: string, amount: number) => {
-    setCart((prevCart) => {
-      return prevCart.map(item => {
-        if (item.id === productId) {
-          const newQuantity = item.quantity + amount;
-          return { ...item, quantity: newQuantity > 0 ? newQuantity : 1 };
-        }
-        return item;
-      });
-    });
+  // Atualiza para uma quantidade específica (Compatível com inputs numéricos e botões +/-)
+  const updateQuantity = (productId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+
+    setCartItems((prevCart) => 
+      prevCart.map(item => 
+        item.id === productId ? { ...item, quantity } : item
+      )
+    );
   };
 
   const clearCart = () => {
-    setCart([]);
+    setCartItems([]);
     localStorage.removeItem('@Empresa:cart');
   };
 
-  const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  // Cálculos derivados
+  const cartTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <CartContext.Provider 
       value={{ 
-        cart, 
+        cartItems,      // Padronizado
+        cartTotal,      // Padronizado
+        cartCount, 
         addToCart, 
         removeFromCart, 
         updateQuantity, 
-        clearCart, 
-        total, 
-        cartCount 
+        clearCart
       }}
     >
       {children}
@@ -121,8 +126,7 @@ export function CartProvider({ children }: CartProviderProps) {
   );
 }
 
-// === HOOK ===
-// Esta é a única forma de acessar o contexto agora.
+// === 4. HOOK ===
 export const useCart = () => {
   const context = useContext(CartContext);
 

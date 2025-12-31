@@ -3,13 +3,15 @@ import { Dialog } from '@headlessui/react';
 import { XMarkIcon, FunnelIcon } from '@heroicons/react/24/outline';
 import { ProductCard } from '../../components/ui/Card/ProductCard';
 import { FilterSidebar } from '../../components/sections/ProductsSection/FilterSidebar';
-// 👇 MUDANÇA 1: Importamos o Firestore diretamente para usar o tempo real
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '../../services/firebase';
-import type { Product } from '../../types'; // Certifique-se que o type existe ou defina aqui
 import { Button } from '../../components/ui/Button';
 
-// Se não tiver o type Product global, descomente abaixo:
+// 👇 MUDANÇA 1: Importamos query e where para filtrar
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '../../services/firebase';
+
+// Se você já tem o type em types/index.ts, mantenha o import. 
+// Caso contrário, use a interface abaixo:
+import type { Product } from '../../types'; 
 /*
 interface Product {
   id: string;
@@ -32,10 +34,19 @@ export const Products = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortOption, setSortOption] = useState<'relevance' | 'price-asc' | 'price-desc'>('relevance');
 
-  // 👇 MUDANÇA 2: useEffect com onSnapshot (Tempo Real)
+  // 👇 MUDANÇA 2: useEffect com Query para EXCLUIR 'Modelos'
   useEffect(() => {
-    // Cria uma conexão direta com o banco
-    const unsubscribe = onSnapshot(collection(db, 'products'), (snapshot) => {
+    setIsLoading(true);
+    
+    // 1. Referência à coleção
+    const productsRef = collection(db, 'products');
+
+    // 2. Criar a Query: Trazer tudo EXCETO a categoria 'Modelos'
+    // Isso garante que os itens do portfólio não apareçam na loja
+    const q = query(productsRef, where('category', '!=', 'Modelos'));
+
+    // 3. Listener em Tempo Real (onSnapshot) usando a Query 'q'
+    const unsubscribe = onSnapshot(q, (snapshot) => {
       const productsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -48,15 +59,16 @@ export const Products = () => {
       setIsLoading(false);
     });
 
-    // Função de limpeza: encerra a conexão quando o usuário sai da página
+    // Função de limpeza
     return () => unsubscribe();
   }, []);
 
-  // Lógica de Filtragem e Ordenação
+  // Lógica de Filtragem (Client-side) e Ordenação
   const filteredProducts = useMemo(() => {
     let result = [...products];
 
-    // 1. Filtro de Categoria
+    // 1. Filtro de Categoria (Selecionado na Sidebar)
+    // Nota: Os 'Modelos' já foram removidos pelo Firebase no useEffect acima.
     if (selectedCategory) {
       result = result.filter(p => p.category === selectedCategory);
     }
@@ -114,7 +126,7 @@ export const Products = () => {
                 Nossos Produtos
               </h1>
               <p className="mt-2 text-gray-200 text-lg">
-                Explore nossa coleção completa com as melhores ofertas.
+                Explore nossa coleção completa de serviços e soluções digitais.
               </p>
             </div>
 

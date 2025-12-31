@@ -1,9 +1,9 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getFunctions } from 'firebase/functions'; // Importante ter isso
 import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { getFunctions } from 'firebase/functions'; 
+import { getStorage } from 'firebase/storage'; 
 
-// Sua configuração (mantenha a que você já colocou)
 const firebaseConfig = {
   apiKey: "AIzaSyB609m5EesRtplFZ95MxRTyEOcxU2GYG7k",
   authDomain: "empresa-site-prod.firebaseapp.com",
@@ -14,9 +14,14 @@ const firebaseConfig = {
   measurementId: "G-PNR2PT72PK"
 };
 
+// 1. Inicializa o App
 const app = initializeApp(firebaseConfig);
 
-// EXPORTAÇÕES OBRIGATÓRIAS
-export const db = getFirestore(app);
-export const functions = getFunctions(app); // <--- Essa linha é crucial para o erro sumir
+// 2. Inicializa e Exporta os serviços diretamente (A forma correta)
 export const auth = getAuth(app);
+export const db = getFirestore(app);
+export const functions = getFunctions(app);
+export const storage = getStorage(app);
+
+// 3. (Opcional) Se quiser exportar o 'app' também
+export default app;
