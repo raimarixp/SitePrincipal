@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { updateEmail, updatePassword, updateProfile } from 'firebase/auth';
-import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore'; // Importações do Firestore
+import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore'; 
+import { useNavigate } from 'react-router-dom'; // Importante para redirecionar após logout
 import { 
   UserIcon, 
   MapPinIcon, 
@@ -13,10 +14,11 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { AddressManager } from '../../components/profile/AddressManager';
+import { MyOrders } from '../Profile/MyOrders';
 
 type TabOption = 'settings' | 'addresses' | 'orders';
 
-// Função utilitária para máscaras (Pode mover para utils/helpers.ts depois)
+// Funções utilitárias (Helpers)
 const maskCPF = (value: string) => {
   return value
     .replace(/\D/g, '')
@@ -37,6 +39,7 @@ const maskPhone = (value: string) => {
 export const Profile = () => {
   const { user, logout } = useAuth();
   const db = getFirestore();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabOption>('settings');
   
   // States do formulário
@@ -64,7 +67,6 @@ export const Profile = () => {
             const data = docSnap.data();
             setCpf(data.cpf || '');
             setPhone(data.phone || '');
-            // Se o nome não estiver no Auth, tenta pegar do banco
             if (!user.displayName && data.name) setName(data.name);
           }
         } catch (error) {
@@ -82,24 +84,17 @@ export const Profile = () => {
     setLoading(true);
 
     try {
-      // 1. Atualizar Auth (Email, Senha, Nome de Exibição)
-      if (newEmail !== user.email) {
-        await updateEmail(user, newEmail);
-      }
-      if (newPassword) {
-        await updatePassword(user, newPassword);
-      }
-      if (name !== user.displayName) {
-        await updateProfile(user, { displayName: name });
-      }
+      // 1. Atualizar Auth
+      if (newEmail !== user.email) await updateEmail(user, newEmail);
+      if (newPassword) await updatePassword(user, newPassword);
+      if (name !== user.displayName) await updateProfile(user, { displayName: name });
 
-      // 2. Atualizar Firestore (Dados extras: CPF, Celular)
-      // Usamos setDoc com merge: true para criar ou atualizar sem apagar o resto
+      // 2. Atualizar Firestore
       await setDoc(doc(db, "users", user.uid), {
         name: name,
         cpf: cpf,
         phone: phone,
-        email: newEmail, // Bom ter o email no banco também para buscas
+        email: newEmail,
         updatedAt: new Date()
       }, { merge: true });
 
@@ -118,10 +113,13 @@ export const Profile = () => {
   };
 
   const handleLogout = async () => {
-    if (logout) await logout();
+    if (logout) {
+      await logout();
+      navigate('/login'); // Redireciona para login
+    }
   };
 
-  if (!user) return null; // Ou redirecionamento
+  if (!user) return null;
 
   return (
     <div className="pt-32 pb-12 min-h-screen bg-gray-50">
@@ -129,7 +127,7 @@ export const Profile = () => {
         
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Minha Conta</h1>
-          <p className="text-gray-600 mt-1">Mantenha seus dados atualizados para agilizar suas compras.</p>
+          <p className="text-gray-600 mt-1">Gerencie seus dados e acompanhe seus pedidos.</p>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -143,7 +141,7 @@ export const Profile = () => {
                     {name ? name.charAt(0).toUpperCase() : user.email?.charAt(0).toUpperCase()}
                   </div>
                   <div className="overflow-hidden">
-                    <p className="font-medium text-gray-900 truncate">{name || 'Olá, Cliente'}</p>
+                    <p className="font-medium text-gray-900 truncate">{name || 'Cliente'}</p>
                     <p className="text-xs text-gray-500 truncate">{user.email}</p>
                   </div>
                 </div>
@@ -196,9 +194,10 @@ export const Profile = () => {
             </div>
           </div>
 
-          {/* CONTEÚDO */}
+          {/* CONTEÚDO PRINCIPAL */}
           <div className="lg:col-span-3">
             
+            {/* 1. ABA DE DADOS PESSOAIS */}
             {activeTab === 'settings' && (
               <div className="bg-white p-6 rounded-xl shadow-sm animate-fade-in">
                 <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
@@ -295,17 +294,19 @@ export const Profile = () => {
               </div>
             )}
 
+            {/* 2. ABA DE ENDEREÇOS */}
             {activeTab === 'addresses' && (
               <AddressManager />
             )}
 
+            {/* 3. ABA DE PEDIDOS (INTEGRADA COM MYORDERS) */}
             {activeTab === 'orders' && (
-              <div className="bg-white p-8 rounded-xl shadow-sm text-center">
-                <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 mb-4">
-                  <ShoppingBagIcon className="h-8 w-8 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-900">Histórico de Pedidos</h3>
-                <p className="text-gray-500 mt-2">Seus pedidos aparecerão aqui.</p>
+              <div className="bg-white p-6 rounded-xl shadow-sm animate-fade-in">
+                <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                  <ShoppingBagIcon className="h-6 w-6 text-primary" />
+                  Histórico de Pedidos
+                </h2>
+                <MyOrders />
               </div>
             )}
           </div>

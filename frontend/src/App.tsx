@@ -11,6 +11,7 @@ import { Footer } from './components/layout/Footer';
 import { LiquidGradient } from './components/ui/LiquidGradient';
 import { CookieBanner } from './components/layout/CookieBanner';
 import { Loading } from './components/ui/Loading';
+import { Toaster } from 'react-hot-toast';
 
 // Imports de Páginas Públicas
 import { Home } from './pages/Home';
@@ -77,6 +78,7 @@ function App() {
     <AuthProvider>
       <CartProvider>
         <Router>
+        <Toaster position="top-center" reverseOrder={false} />
           <Suspense fallback={
             <Loading fullScreen text="Carregando Portfólio..." />
           }>
@@ -130,6 +132,8 @@ function App() {
                     </AdminRoute>
                   } 
                 />
+
+                <Route path="/admin/pedidos" element={<AdminOrders />} />
                 
                 <Route path="/admin/produtos" element={
                     <AdminRoute>

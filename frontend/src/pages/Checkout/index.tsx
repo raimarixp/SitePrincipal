@@ -11,7 +11,7 @@ import {
   UserCircleIcon,
   PlusIcon
 } from '@heroicons/react/24/outline';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 interface Address {
   id: string;

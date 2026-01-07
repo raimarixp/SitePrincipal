@@ -1,154 +1,175 @@
-import React from 'react';
+import { useState } from 'react';
 import { Dialog } from '@headlessui/react';
-import { XMarkIcon, MapPinIcon, UserIcon, PhoneIcon, CreditCardIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, MapPinIcon, UserIcon, CreditCardIcon, CalendarIcon } from '@heroicons/react/24/outline';
+import { doc, updateDoc, getFirestore } from 'firebase/firestore';
+import { toast } from 'react-hot-toast';
 import { formatPrice } from '../../../utils/helpers';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '../../../services/firebase';
-import { Button } from '../../../components/ui/Button';
+import { type Order, StatusBadge } from './index';
 
 interface OrderDetailsProps {
-  order: any;
+  order: Order | null;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export const OrderDetails: React.FC<OrderDetailsProps> = ({ order, isOpen, onClose }) => {
+export const OrderDetails = ({ order, isOpen, onClose }: OrderDetailsProps) => {
+  const [updating, setUpdating] = useState(false);
+  const db = getFirestore();
+
   if (!order) return null;
 
-  const { customer, items } = order;
-
-  // Função para mudar status manualmente (ex: se o cliente pagou via Pix manual)
-  const updateStatus = async (newStatus: string) => {
-    if (confirm(`Deseja alterar o status para: ${newStatus}?`)) {
-      try {
-        await updateDoc(doc(db, 'orders', order.id), { status: newStatus });
-        onClose(); // Fecha para atualizar a lista
-      } catch (error) {
-        alert("Erro ao atualizar status");
-      }
+  const handleStatusChange = async (newStatus: string) => {
+    if (!confirm(`Confirmar alteração para: ${newStatus}?`)) return;
+    setUpdating(true);
+    const toastId = toast.loading("Sincronizando...");
+    try {
+      // Isso atualiza o Firestore. Como o cliente escuta o Firestore,
+      // a atualização é AUTOMÁTICA no painel dele também.
+      await updateDoc(doc(db, 'orders', order.id), { status: newStatus });
+      toast.success("Status atualizado!", { id: toastId });
+      onClose();
+    } catch (error) {
+      toast.error("Erro ao atualizar", { id: toastId });
+    } finally {
+      setUpdating(false);
     }
   };
 
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" aria-hidden="true" />
+      <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" aria-hidden="true" />
 
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="mx-auto max-w-3xl w-full bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <Dialog.Panel className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-fade-in">
           
-          {/* Cabeçalho */}
-          <div className="bg-slate-50 dark:bg-slate-900 p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+          {/* Header com Gradiente */}
+          <div className="px-6 py-6 bg-gradient-to-r from-slate-800 to-slate-900 flex justify-between items-start text-white">
             <div>
-              <Dialog.Title className="text-xl font-bold text-slate-900 dark:text-white">
+              <Dialog.Title className="text-xl font-bold flex items-center gap-2">
                 Pedido #{order.id.slice(0, 8).toUpperCase()}
               </Dialog.Title>
-              <p className="text-sm text-slate-500">
-                Realizado em: {order.createdAt?.toDate().toLocaleString('pt-BR')}
-              </p>
+              <div className="flex items-center gap-2 text-slate-300 text-sm mt-1">
+                <CalendarIcon className="w-4 h-4" />
+                {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString('pt-BR') : 'Data inválida'}
+              </div>
             </div>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
-              <XMarkIcon className="w-6 h-6" />
+            <button onClick={onClose} className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors">
+              <XMarkIcon className="w-5 h-5 text-white" />
             </button>
           </div>
 
-          {/* Conteúdo com Scroll */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-8">
+          <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-slate-50">
             
-            {/* 1. DADOS DO CLIENTE */}
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
-                  <UserIcon className="w-4 h-4" /> Cliente
-                </h3>
-                <div className="space-y-2 text-sm text-slate-800 dark:text-slate-200">
-                  <p><span className="font-bold">Nome:</span> {customer.fullName}</p>
-                  <p><span className="font-bold">CPF/CNPJ:</span> {customer.document}</p>
-                  <p><span className="font-bold">Email:</span> {customer.email}</p>
-                  <p className="flex items-center gap-2">
-                    <span className="font-bold">Tel:</span> 
-                    {customer.phone}
-                    <a 
-                      href={`https://wa.me/55${customer.phone.replace(/\D/g, '')}`} 
-                      target="_blank" 
-                      className="text-green-600 text-xs font-bold hover:underline"
-                    >
-                      (Abrir WhatsApp)
-                    </a>
-                  </p>
-                </div>
+            {/* Status Bar */}
+            <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-5 rounded-xl border border-slate-200 shadow-sm gap-4">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold text-slate-500 uppercase tracking-wide">Status Atual</span>
+                <StatusBadge status={order.status} />
               </div>
-
-              <div className="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
-                  <MapPinIcon className="w-4 h-4" /> Endereço de Instalação
-                </h3>
-                <div className="space-y-1 text-sm text-slate-800 dark:text-slate-200">
-                  <p>{customer.street}, {customer.number}</p>
-                  <p>{customer.neighborhood}</p>
-                  {customer.complement && <p className="text-slate-500">Comp: {customer.complement}</p>}
-                  <p>{customer.city} - {customer.state}</p>
-                  <p className="font-mono text-xs mt-2">CEP: {customer.zipCode}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* 2. PRODUTOS */}
-            <div>
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
-                <CreditCardIcon className="w-4 h-4" /> Itens do Pedido
-              </h3>
-              <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400">
-                    <tr>
-                      <th className="p-3">Produto</th>
-                      <th className="p-3 text-right">Qtd</th>
-                      <th className="p-3 text-right">Preço</th>
-                      <th className="p-3 text-right">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                    {items.map((item: any, idx: number) => (
-                      <tr key={idx} className="bg-white dark:bg-slate-800">
-                        <td className="p-3">{item.name}</td>
-                        <td className="p-3 text-right">{item.quantity}</td>
-                        <td className="p-3 text-right">{formatPrice(item.price)}</td>
-                        <td className="p-3 text-right font-medium">{formatPrice(item.price * item.quantity)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="bg-slate-50 dark:bg-slate-900 font-bold">
-                    <tr>
-                      <td colSpan={3} className="p-3 text-right">Total Geral</td>
-                      <td className="p-3 text-right text-lg text-blue-600">{formatPrice(order.total)}</td>
-                    </tr>
-                  </tfoot>
-                </table>
+              
+              {/* Botões de Ação */}
+              <div className="flex gap-2">
+                {order.status === 'pending' && (
+                  <button 
+                    onClick={() => handleStatusChange('paid')}
+                    disabled={updating}
+                    className="px-4 py-2 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700 shadow-sm disabled:opacity-50"
+                  >
+                    Marcar Pago Manual
+                  </button>
+                )}
+                {order.status === 'paid' && (
+                  <button 
+                    onClick={() => handleStatusChange('shipped')}
+                    disabled={updating}
+                    className="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 shadow-sm disabled:opacity-50"
+                  >
+                    Marcar Enviado
+                  </button>
+                )}
+                 {order.status !== 'cancelled' && order.status !== 'shipped' && (
+                  <button 
+                    onClick={() => handleStatusChange('cancelled')}
+                    disabled={updating}
+                    className="px-4 py-2 bg-white text-red-600 border border-red-200 text-xs font-bold rounded-lg hover:bg-red-50 disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                 )}
               </div>
             </div>
 
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Dados do Cliente */}
+              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h3 className="text-xs font-bold text-slate-400 uppercase flex items-center gap-2 mb-4 border-b pb-2">
+                  <UserIcon className="h-4 w-4" /> Dados do Cliente
+                </h3>
+                {order.payer ? (
+                  <div className="space-y-2 text-sm">
+                    <p><span className="text-slate-500">Nome:</span> <span className="font-semibold text-slate-800">{order.payer.name}</span></p>
+                    <p><span className="text-slate-500">Email:</span> <span className="text-slate-800">{order.payer.email}</span></p>
+                    <p><span className="text-slate-500">CPF:</span> <span className="font-mono text-slate-800">{order.payer.cpf}</span></p>
+                    <p><span className="text-slate-500">Tel:</span> <span className="font-mono text-slate-800">{order.payer.phone}</span></p>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-yellow-50 text-yellow-800 text-sm rounded-lg border border-yellow-100">
+                    Dados do pagador não salvos neste pedido (Pedido Antigo).
+                  </div>
+                )}
+              </div>
 
-          {/* Rodapé com Ações */}
-          <div className="bg-slate-50 dark:bg-slate-900 p-6 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">
-            {order.status === 'pending' && (
-              <>
-                <Button variant="outline" onClick={() => updateStatus('cancelled')} className="border-red-200 text-red-600 hover:bg-red-50">
-                  Cancelar Pedido
-                </Button>
-                <Button onClick={() => updateStatus('approved')} className="bg-green-600 hover:bg-green-700 text-white">
-                  Marcar como Pago
-                </Button>
-              </>
-            )}
-            {order.status === 'approved' && (
-              <Button onClick={() => updateStatus('shipped')} className="bg-blue-600 hover:bg-blue-700 text-white">
-                Marcar como Enviado/Instalado
-              </Button>
-            )}
-            <Button variant="ghost" onClick={onClose}>Fechar</Button>
-          </div>
+              {/* Endereço */}
+              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h3 className="text-xs font-bold text-slate-400 uppercase flex items-center gap-2 mb-4 border-b pb-2">
+                  <MapPinIcon className="h-4 w-4" /> Entrega
+                </h3>
+                {order.deliveryAddress ? (
+                   <div className="text-sm text-slate-600">
+                      <p className="font-bold text-slate-800">{order.deliveryAddress.street}, {order.deliveryAddress.number}</p>
+                      <p>{order.deliveryAddress.neighborhood}</p>
+                      <p>{order.deliveryAddress.city} - {order.deliveryAddress.state}</p>
+                      <p className="mt-2 font-mono text-xs bg-slate-100 inline-block px-2 py-1 rounded">{order.deliveryAddress.cep}</p>
+                   </div>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-slate-400 text-sm italic">
+                    Sem endereço (Produto Digital ou Erro)
+                  </div>
+                )}
+              </div>
+            </div>
 
+            {/* Lista de Produtos */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="bg-slate-50 px-5 py-3 border-b border-slate-200 flex items-center gap-2">
+                <CreditCardIcon className="h-4 w-4 text-slate-500" />
+                <h3 className="text-xs font-bold text-slate-500 uppercase">Itens do Pedido</h3>
+              </div>
+              <table className="w-full text-sm text-left">
+                <tbody className="divide-y divide-slate-100">
+                  {order.items?.map((item: any, idx: number) => (
+                    <tr key={idx}>
+                      <td className="px-5 py-4">
+                        <div className="font-medium text-slate-900">{item.title || item.name}</div>
+                        <div className="text-xs text-slate-500">Qtd: {item.quantity}</div>
+                      </td>
+                      <td className="px-5 py-4 text-right font-medium text-slate-900">
+                        {formatPrice((item.unit_price || item.price) * item.quantity)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="bg-slate-50 border-t border-slate-200">
+                  <tr>
+                    <td className="px-5 py-4 text-right font-bold text-slate-600 uppercase text-xs">Total Geral</td>
+                    <td className="px-5 py-4 text-right font-black text-xl text-primary">
+                      {formatPrice(order.total)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
         </Dialog.Panel>
       </div>
     </Dialog>

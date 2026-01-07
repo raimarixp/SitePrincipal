@@ -9,15 +9,15 @@ import {
   type User, 
   onAuthStateChanged, 
   getAuth, 
-  signOut // 1. Importar o signOut
+  signOut 
 } from 'firebase/auth';
-import app from '../services/firebase'; // Certifique-se que o caminho está certo
+import app from '../services/firebase'; 
 
-// 2. Adicionar logout na tipagem
+// Definição da interface do Contexto
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  logout: () => Promise<void>; // <--- ADICIONADO AQUI
+  logout: () => Promise<void>; // Função logout tipada
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -25,6 +25,8 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Inicializa o Auth usando o app importado
   const auth = getAuth(app);
 
   useEffect(() => {
@@ -35,7 +37,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, [auth]);
 
-  // 3. Criar a função de logout
+  // Função de Logout que será exportada
   const logout = async () => {
     try {
       await signOut(auth);
@@ -48,7 +50,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider value={{ 
       user, 
       loading, 
-      logout // 4. Passar a função no value
+      logout 
     }}>
       {!loading && children}
     </AuthContext.Provider>

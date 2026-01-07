@@ -1,7 +1,6 @@
-import { type ReactNode, useEffect, useState } from 'react';
+import React, { useEffect, useState, type ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../services/firebase';
+import { getFirestore, doc, getDoc } from 'firebase/firestore'; // Importação direta do SDK
 import { useAuth } from '../../contexts/AuthContext';
 
 interface AdminRouteProps {
@@ -10,54 +9,57 @@ interface AdminRouteProps {
 
 export const AdminRoute = ({ children }: AdminRouteProps) => {
   const { user, loading } = useAuth();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null); // null = ainda verificando
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null); // null = verificando
+  const db = getFirestore(); // Inicializa o DB
 
   useEffect(() => {
     const checkAdminStatus = async () => {
-      // 1. Se o Auth ainda está carregando ou não tem usuário, não faz nada
+      // 1. Se o Auth ainda está carregando, aguarda
       if (loading) return;
+
+      // 2. Se não tem usuário logado, com certeza não é admin
       if (!user) {
         setIsAdmin(false);
         return;
       }
 
       try {
-        // 2. Busca o documento do usuário na coleção 'users' pelo UID
+        // 3. Busca o documento do usuário na coleção 'users' pelo UID
         const userDocRef = doc(db, 'users', user.uid);
         const userDocSnap = await getDoc(userDocRef);
 
-        // 3. Verifica se o documento existe e se a role é 'admin'
+        // 4. Verifica se o campo 'role' é 'admin'
         if (userDocSnap.exists() && userDocSnap.data().role === 'admin') {
           setIsAdmin(true);
         } else {
+          console.warn("Acesso negado: Usuário não tem permissão de admin.");
           setIsAdmin(false);
         }
       } catch (error) {
-        console.error("Erro ao verificar permissão:", error);
+        console.error("Erro ao verificar permissão de admin:", error);
         setIsAdmin(false);
       }
     };
 
     checkAdminStatus();
-  }, [user, loading]);
+  }, [user, loading, db]);
 
-  // Enquanto verifica a autenticação OU a permissão no banco
+  // === ESTADO DE CARREGAMENTO ===
   if (loading || isAdmin === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500 font-medium">Verificando permissões...</p>
-        </div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+        <div className="w-16 h-16 border-4 border-gray-200 border-t-primary rounded-full animate-spin mb-4"></div>
+        <p className="text-gray-500 font-medium animate-pulse">Verificando permissões...</p>
       </div>
     );
   }
 
-  // Se não for admin, chuta para a Home
+  // === ACESSO NEGADO ===
   if (!isAdmin) {
+    // Redireciona para Home e substitui o histórico para evitar botão "voltar" infinito
     return <Navigate to="/" replace />;
   }
 
-  // Se for admin, libera o acesso
+  // === ACESSO PERMITIDO ===
   return <>{children}</>;
 };
