@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom
 
 // Imports dos Contextos
 import { AuthProvider } from './contexts/AuthContext';
-import { CartProvider } from './contexts/CartContext';
 
 // Imports de Componentes de Layout e UI (DA AGÊNCIA)
 import { Header } from './components/layout/Header';
@@ -15,8 +14,6 @@ import { Toaster } from 'react-hot-toast';
 
 // Imports de Páginas Públicas
 import { Home } from './pages/Home';
-import { Products } from './pages/Products';
-import { ProductDetails } from './pages/ProductDetails';
 import { Portfolio } from './pages/Portfolio'; // Essa é a página que lista os demos
 import { About } from './pages/About';
 import { Contact } from './pages/Contact';
@@ -25,18 +22,9 @@ import { Contact } from './pages/Contact';
 import { Login } from './pages/Auth/Login'; 
 import { Profile } from './pages/Profile';
 
-// Imports de Checkout e Pedidos
-import { Checkout } from './pages/Checkout';
-import { Cart } from './pages/Cart';
-import { Orders } from './pages/Orders';
-import { Success } from './pages/Success';
-import { Failure } from './pages/Failure';
-import { AdminOrders } from './pages/Admin/Orders';
-
 // Imports Administrativos
 import { AdminRoute } from './components/auth/AdminRoute';
 import { Dashboard } from './pages/Admin/Dashboard';
-import { Admin as AdminProducts } from './pages/Admin/Products';
 
 // Imports das Páginas Legais
 import { Privacy } from './pages/Legal/Privacy';
@@ -76,7 +64,6 @@ const AgencyLayout = () => (
 function App() {
   return (
     <AuthProvider>
-      <CartProvider>
         <Router>
         <Toaster position="top-center" reverseOrder={false} />
           <Suspense fallback={
@@ -101,8 +88,6 @@ function App() {
                 
                 {/* Públicas */}
                 <Route path="/" element={<Home />} />
-                <Route path="/produtos" element={<Products />} />
-                <Route path="/produtos/:id" element={<ProductDetails />} />
                 <Route path="/portfolio" element={<Portfolio />} /> {/* Lista os demos */}
                 
                 {/* Institucionais */}
@@ -113,13 +98,6 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/minha-conta" element={<Profile />} />
 
-                {/* Checkout e Pedidos */}
-                <Route path="/checkout" element={<Checkout />} />
-                <Route path="/carrinho" element={<Cart />} />
-                <Route path="/meus-pedidos" element={<Orders />} />
-                <Route path="/sucesso" element={<Success />} />
-                <Route path="/falha" element={<Failure />} />
-                <Route path="/pendente" element={<Failure />} />
                 
                 {/* Páginas Legais */}
                 <Route path="/privacidade" element={<Privacy />} />
@@ -133,20 +111,7 @@ function App() {
                   } 
                 />
 
-                <Route path="/admin/pedidos" element={<AdminOrders />} />
                 
-                <Route path="/admin/produtos" element={
-                    <AdminRoute>
-                      <AdminProducts />
-                    </AdminRoute>
-                  } 
-                />
-
-                <Route path="/admin/pedidos" element={
-  <AdminRoute>
-    <AdminOrders />
-  </AdminRoute>
-} />
 
                 {/* Rota 404 (Dentro do Layout da Agência) */}
                 <Route path="*" element={
@@ -163,7 +128,6 @@ function App() {
             </Routes>
           </Suspense>
         </Router>
-      </CartProvider>
     </AuthProvider>
   );
 }

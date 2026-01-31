@@ -1,4 +1,4 @@
-import React from 'react';
+// empresa-site/frontend/src/demos/lawyer/App.tsx
 import { Routes, Route } from 'react-router-dom';
 import { LawyerLayout } from './layouts/LawyerLayout';
 import { Home } from './pages/Home';

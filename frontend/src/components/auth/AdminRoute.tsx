@@ -1,4 +1,4 @@
-import React, { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { getFirestore, doc, getDoc } from 'firebase/firestore'; // Importação direta do SDK
 import { useAuth } from '../../contexts/AuthContext';

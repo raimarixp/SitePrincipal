@@ -207,7 +207,7 @@ export const Profile = () => {
                 
                 {message && (
                   <div className={`p-4 rounded-lg mb-6 text-sm font-medium ${
-                    message.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'
+                    message.type === 'error' ? 'bg-primary text-primary' : 'bg-green-50 text-green-700'
                   }`}>
                     {message.text}
                   </div>

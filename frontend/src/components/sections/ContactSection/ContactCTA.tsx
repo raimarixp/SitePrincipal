@@ -23,7 +23,7 @@ export const ContactCTA = () => {
               {/* BOTÃO PRIMÁRIO: Vermelho Vibrante + Texto Preto */}
               <Button 
                 size="lg" 
-                className="rounded-full px-8 bg-[#FF0000] hover:bg-red-600 text-black border-none min-w-[180px] font-black shadow-lg hover:scale-105 transition-transform"
+                className="rounded-full px-8 bg-[#FF0000] hover:bg-primary text-black border-none min-w-[180px] font-black shadow-lg hover:scale-105 transition-transform"
               >
                 Fale Conosco
               </Button>

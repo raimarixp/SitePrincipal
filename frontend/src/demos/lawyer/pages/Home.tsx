@@ -1,4 +1,4 @@
-import React from 'react';
+// empresa-site/frontend/src/demos/lawyer/pages/Home.tsx
 import { Hero } from '../components/Hero'; // Verifique se criou este arquivo
 import { PracticeAreas } from '../components/PracticeAreas'; // Verifique se criou este arquivo
 import { ContactSection } from '../components/ContactSection';

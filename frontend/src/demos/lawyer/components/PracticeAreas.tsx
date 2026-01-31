@@ -1,4 +1,4 @@
-import React from 'react';
+// empresa-site/frontend/src/demos/lawyer/components/PracticeAreas.tsxs
 import { ScaleIcon, BuildingOfficeIcon, UserGroupIcon, DocumentTextIcon, BanknotesIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 
 const areas = [

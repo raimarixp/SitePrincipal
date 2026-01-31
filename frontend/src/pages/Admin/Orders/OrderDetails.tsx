@@ -91,7 +91,7 @@ export const OrderDetails = ({ order, isOpen, onClose }: OrderDetailsProps) => {
                   <button 
                     onClick={() => handleStatusChange('cancelled')}
                     disabled={updating}
-                    className="px-4 py-2 bg-white text-red-600 border border-red-200 text-xs font-bold rounded-lg hover:bg-red-50 disabled:opacity-50"
+                    className="px-4 py-2 bg-white text-primary border border-primary text-xs font-bold rounded-lg hover:bg-primary disabled:opacity-50"
                   >
                     Cancelar
                   </button>

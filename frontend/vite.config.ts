@@ -5,17 +5,25 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
-    // Aumenta o limite do aviso para 1000kb (opcional, só para sumir o aviso)
-    chunkSizeWarningLimit: 1000, 
+    // Aumentamos o limite para não dar aviso, já que o vendor vai ficar grandinho
+    chunkSizeWarningLimit: 2000, 
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // Separa o Firebase em um arquivo isolado (ele é pesado)
-          if (id.includes('firebase')) {
-            return 'firebase';
-          }
-          // Separa as bibliotecas do React e outras dependências
           if (id.includes('node_modules')) {
+            
+            // 1. Firebase (Gigante e isolado)
+            if (id.includes('firebase')) {
+              return 'firebase';
+            }
+
+            // 2. Three.js (Usado no gradiente, muito pesado)
+            if (id.includes('three')) {
+              return 'three';
+            }
+
+            // 3. Todo o resto (React, Framer Motion, Ícones, etc)
+            // Mantemos juntos para evitar erros de importação/ordem
             return 'vendor';
           }
         },

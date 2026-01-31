@@ -97,7 +97,7 @@ export const HeroCarousel = () => {
                     <Link to={slide.link}>
                       <Button 
                         size="lg" 
-                        className="bg-primary hover:bg-red-600 text-white font-bold px-8 py-4 rounded-full shadow-lg hover:scale-105 transition-transform border-none"
+                        className="bg-primary hover:bg-primary text-white font-bold px-8 py-4 rounded-full shadow-lg hover:scale-105 transition-transform border-none"
                       >
                         {slide.cta}
                       </Button>

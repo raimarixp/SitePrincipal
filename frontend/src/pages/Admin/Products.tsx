@@ -147,7 +147,7 @@ export const Admin = () => {
                         </button>
                         <button 
                           onClick={() => handleDelete(product.id)} 
-                          className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-full transition-colors"
+                          className="text-primary hover:text-primary p-2 hover:bg-primary rounded-full transition-colors"
                           title="Excluir"
                         >
                           <TrashIcon className="h-5 w-5" />

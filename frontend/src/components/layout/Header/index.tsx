@@ -1,21 +1,15 @@
 import { useState, useEffect, Fragment } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Dialog, Menu, Transition } from '@headlessui/react';
-import { Bars3Icon, XMarkIcon, ShoppingBagIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
-import { Button } from '../../ui/Button';
+import { Bars3Icon, XMarkIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 import { cn } from '../../../utils/helpers';
 import { useAuth } from '../../../contexts/AuthContext';
-import { useCart } from '../../../contexts/CartContext';
-
-// Imports do Firebase para verificar Admin
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../../services/firebase';
 
-// ✅ ATUALIZAÇÃO: Adicionado 'Portfólio' na navegação
 const navigation = [
   { name: 'Início', href: '/' },
-  { name: 'Produtos', href: '/produtos' },
-  { name: 'Portfólio', href: '/portfolio' }, // Nova aba
+  { name: 'Portfólio', href: '/portfolio' },
   { name: 'Sobre', href: '/sobre' },
   { name: 'Contato', href: '/contato' },
 ];
@@ -25,9 +19,7 @@ export const Header = () => {
   const [scrolled, setScrolled] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const location = useLocation();
-  
-  const { user, signOut } = useAuth();
-  const { cartCount } = useCart();
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
@@ -35,7 +27,6 @@ export const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Verifica se o usuário é Admin no Firestore
   useEffect(() => {
     const checkAdminStatus = async () => {
       if (!user) {
@@ -45,61 +36,47 @@ export const Header = () => {
       try {
         const userDocRef = doc(db, 'users', user.uid);
         const userDocSnap = await getDoc(userDocRef);
-        
         if (userDocSnap.exists() && userDocSnap.data().role === 'admin') {
           setIsAdmin(true);
-        } else {
-          setIsAdmin(false);
         }
       } catch (error) {
-        console.error("Erro ao verificar admin:", error);
-        setIsAdmin(false);
+        console.error("Erro verificação admin", error);
       }
     };
-
     checkAdminStatus();
   }, [user]);
 
-  const CartIcon = () => (
-    <Link to="/carrinho" className="group -m-2 flex items-center p-2">
-      <div className="relative">
-        <ShoppingBagIcon
-          className={cn(
-            "h-6 w-6 flex-shrink-0 transition-colors",
-            "text-gray-900 group-hover:text-primary"
-          )}
-          aria-hidden="true"
-        />
-        {cartCount > 0 && (
-          <span className="absolute -top-1 -right-2 h-4 w-4 rounded-full bg-secondary text-[10px] font-bold text-white flex items-center justify-center shadow-sm">
-            {cartCount}
-          </span>
-        )}
-      </div>
-      <span className="sr-only">itens no carrinho, ver sacola</span>
-    </Link>
-  );
-
   return (
     <header className={cn(
-      "fixed inset-x-0 top-0 z-50 transition-all duration-300",
-      scrolled ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100" : "bg-white"
+      "fixed inset-x-0 top-0 z-50 transition-all duration-300 border-b",
+      scrolled 
+        ? "bg-black/90 backdrop-blur-md border-tertiary/20 shadow-md shadow-primary/5" 
+        : "bg-transparent border-transparent"
     )}>
       <nav className="container mx-auto px-4 sm:px-6 flex items-center justify-between py-4" aria-label="Global">
         
-        {/* LOGO */}
+        {/* LOGO (Desktop) */}
         <div className="flex lg:flex-1">
-          <Link to="/" className="-m-1.5 p-1.5 text-2xl font-black tracking-tighter text-gray-900">
-            WebCraftBr<span className="text-primary">.</span>
+          <Link to="/" className="-m-1.5 p-1.5 group">
+            <span className="sr-only">Sua Empresa</span>
+            <img 
+              className="h-10 w-auto object-contain" 
+              src="/logo.png" 
+              alt="Logo Marca" 
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                // Fallback: WEB (Azul) + UILD (Branco)
+                e.currentTarget.parentElement!.innerHTML += '<span class="text-2xl font-black text-white tracking-tighter group-hover:text-tertiary transition-colors"><span class="text-primary">WEB</span>UILD<span class="text-primary">.</span></span>';
+              }}
+            />
           </Link>
         </div>
 
-        {/* ÍCONES MOBILE (Carrinho + Menu Hamburguer) */}
+        {/* ÍCONES MOBILE */}
         <div className="flex lg:hidden items-center gap-4">
-          <CartIcon />
           <button
             type="button"
-            className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-gray-700"
+            className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-white hover:text-primary transition-colors"
             onClick={() => setMobileMenuOpen(true)}
           >
             <span className="sr-only">Abrir menu</span>
@@ -107,15 +84,15 @@ export const Header = () => {
           </button>
         </div>
 
-        {/* MENU DESKTOP CENTRAL */}
+        {/* MENU DESKTOP */}
         <div className="hidden lg:flex lg:gap-x-8">
           {navigation.map((item) => (
             <Link
               key={item.name}
               to={item.href}
               className={cn(
-                "text-sm font-semibold leading-6 transition-colors hover:text-primary",
-                location.pathname === item.href ? "text-primary" : "text-gray-900"
+                "nav-link",
+                location.pathname === item.href ? "text-primary font-bold" : ""
               )}
             >
               {item.name}
@@ -123,36 +100,29 @@ export const Header = () => {
           ))}
         </div>
 
-        {/* ÁREA DO USUÁRIO DESKTOP */}
+        {/* ÁREA DO USUÁRIO */}
         <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center gap-6">
           
-          {/* Link Admin (Só aparece se for admin) */}
           {isAdmin && (
             <Link to="/admin" className="group -m-2 flex items-center p-2" title="Painel Administrativo">
-              <Cog6ToothIcon 
-                className="h-6 w-6 flex-shrink-0 transition-colors text-gray-900 group-hover:text-primary" 
-                aria-hidden="true"
-              />
+              <Cog6ToothIcon className="h-6 w-6 text-tertiary group-hover:text-primary transition-colors duration-300" />
             </Link>
           )}
 
-          <CartIcon />
-          
-          <div className="h-6 w-px bg-gray-200" aria-hidden="true" />
+          <div className="h-6 w-px bg-tertiary/30" aria-hidden="true" />
 
           {user ? (
             <Menu as="div" className="relative">
-              <Menu.Button className="-m-1.5 flex items-center p-1.5 focus:outline-none">
-                <span className="sr-only">Abrir menu de usuário</span>
+              <Menu.Button className="-m-1.5 flex items-center p-1.5 focus:outline-none group">
                 {user.photoURL ? (
-                  <img className="h-8 w-8 rounded-full bg-gray-50 object-cover" src={user.photoURL} alt="" />
+                  <img className="h-8 w-8 rounded-full bg-tertiary object-cover border-2 border-transparent group-hover:border-primary transition-all" src={user.photoURL} alt="" />
                 ) : (
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                  <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold border border-primary/50 group-hover:bg-primary group-hover:text-white transition-all">
                     {user.email?.charAt(0).toUpperCase()}
                   </div>
                 )}
                 <span className="hidden lg:flex lg:items-center">
-                  <span className="ml-2 text-sm font-semibold leading-6 text-gray-900" aria-hidden="true">
+                  <span className="ml-2 text-sm font-semibold leading-6 text-white uppercase tracking-wider group-hover:text-primary transition-colors">
                     {user.displayName?.split(' ')[0] || 'Minha Conta'}
                   </span>
                 </span>
@@ -166,38 +136,17 @@ export const Header = () => {
                 leaveFrom="transform opacity-100 scale-100"
                 leaveTo="transform opacity-0 scale-95"
               >
-                <Menu.Items className="absolute right-0 z-10 mt-2.5 w-48 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none">
+                <Menu.Items className="absolute right-0 z-10 mt-2.5 w-48 origin-top-right rounded-md bg-[#111111] py-2 shadow-xl shadow-primary/10 ring-1 ring-tertiary/20 focus:outline-none border border-tertiary/10">
                   <Menu.Item>
                     {({ active }) => (
-                      <Link to="/minha-conta" className={cn(active ? 'bg-gray-50' : '', 'block px-3 py-1 text-sm leading-6 text-gray-900')}>
-                        Meu Perfil
+                      <Link to="/meus-pedidos" className={cn(active ? 'bg-primary/10 text-primary' : 'text-tertiary', 'block px-3 py-1 text-sm leading-6 transition-colors')}>
+                        Acompanhar Serviços
                       </Link>
                     )}
                   </Menu.Item>
                   <Menu.Item>
                     {({ active }) => (
-                      <Link to="/meus-pedidos" className={cn(active ? 'bg-gray-50' : '', 'block px-3 py-1 text-sm leading-6 text-gray-900')}>
-                        Meus Pedidos
-                      </Link>
-                    )}
-                  </Menu.Item>
-                  
-                  {isAdmin && (
-                    <Menu.Item>
-                      {({ active }) => (
-                        <Link to="/admin" className={cn(active ? 'bg-gray-50' : '', 'block px-3 py-1 text-sm leading-6 text-gray-900 font-bold text-primary')}>
-                          Painel Admin
-                        </Link>
-                      )}
-                    </Menu.Item>
-                  )}
-
-                  <Menu.Item>
-                    {({ active }) => (
-                      <button
-                        onClick={() => signOut()}
-                        className={cn(active ? 'bg-gray-50' : '', 'block w-full text-left px-3 py-1 text-sm leading-6 text-red-600')}
-                      >
+                      <button onClick={() => logout()} className={cn(active ? 'bg-red-900/20' : '', 'block w-full text-left px-3 py-1 text-sm leading-6 text-red-500 hover:text-red-400')}>
                         Sair
                       </button>
                     )}
@@ -206,104 +155,59 @@ export const Header = () => {
               </Transition>
             </Menu>
           ) : (
-            <Link to="/login" className="text-sm font-semibold leading-6 text-gray-900 hover:text-primary">
-              Entrar <span aria-hidden="true">&rarr;</span>
+            <Link to="/login" className="btn-primary-new text-sm">
+              Área do Cliente
             </Link>
           )}
         </div>
       </nav>
 
-      {/* MENU MOBILE (Slide-over) */}
+      {/* MENU MOBILE */}
       <Dialog as="div" className="lg:hidden" open={mobileMenuOpen} onClose={setMobileMenuOpen}>
-        <div className="fixed inset-0 z-50" />
-        <Dialog.Panel className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10">
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm" />
+        <Dialog.Panel className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-[#000000] px-6 py-6 sm:max-w-sm border-l border-tertiary/20">
           <div className="flex items-center justify-between">
-            <Link to="/" className="-m-1.5 p-1.5 text-2xl font-black text-gray-900">
-              WebCraftBr<span className="text-primary">.</span>
+            <Link to="/" className="-m-1.5 p-1.5">
+               {/* AQUI ESTÁ A MUDANÇA NO MOBILE: Web em azul, o resto em branco */}
+               <span className="text-2xl font-black text-white tracking-tighter">
+                 <span className="text-primary">Web</span>uildbr<span className="text-primary">.</span>
+               </span>
             </Link>
-            <button
-              type="button"
-              className="-m-2.5 rounded-md p-2.5 text-gray-700"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <span className="sr-only">Fechar menu</span>
+            <button type="button" className="-m-2.5 rounded-md p-2.5 text-white hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+              <span className="sr-only">Fechar</span>
               <XMarkIcon className="h-6 w-6" aria-hidden="true" />
             </button>
           </div>
           <div className="mt-6 flow-root">
-            <div className="-my-6 divide-y divide-gray-500/10">
+            <div className="-my-6 divide-y divide-tertiary/20">
               <div className="space-y-2 py-6">
-                {/* Links de Navegação Mobile */}
                 {navigation.map((item) => (
                   <Link
                     key={item.name}
                     to={item.href}
-                    className="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
+                    className={cn(
+                      "-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 hover:bg-white/5 uppercase transition-colors",
+                      location.pathname === item.href ? "text-primary" : "text-white"
+                    )}
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {item.name}
                   </Link>
                 ))}
               </div>
-              
               <div className="py-6">
                 {user ? (
-                  <>
-                    <div className="flex items-center gap-3 mb-4 px-3">
-                      {user.photoURL ? (
-                        <img className="h-10 w-10 rounded-full bg-gray-50 object-cover" src={user.photoURL} alt="" />
-                      ) : (
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                          {user.email?.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <div>
-                        <p className="font-semibold text-gray-900">{user.displayName || user.email}</p>
-                        <p className="text-xs text-gray-500">Logado</p>
-                      </div>
-                    </div>
-                    
-                    {isAdmin && (
-                      <Link
-                        to="/admin"
-                        className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50 bg-gray-50"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        🔧 Painel Admin
-                      </Link>
-                    )}
-
-                    <Link
-                      to="/meus-pedidos"
-                      className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      📦 Meus Pedidos
+                   <>
+                    <Link to="/meus-pedidos" className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-primary hover:bg-primary/10" onClick={() => setMobileMenuOpen(false)}>
+                       📂 Acompanhar Serviços
                     </Link>
-                    <Link
-                      to="/minha-conta"
-                      className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      ⚙️ Configurações
-                    </Link>
-                    <button
-                      onClick={() => {
-                        signOut();
-                        setMobileMenuOpen(false);
-                      }}
-                      className="-mx-3 block w-full text-left rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-red-600 hover:bg-gray-50"
-                    >
+                    <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="-mx-3 block w-full text-left rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-red-500 hover:bg-white/5">
                       Sair da conta
                     </button>
-                  </>
+                   </>
                 ) : (
-                  <Link
-                    to="/login"
-                    className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <Button className="w-full justify-center">Entrar / Cadastrar</Button>
+                  <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-white hover:text-primary border border-tertiary/30 text-center mt-4">
+                    Entrar / Área do Cliente
                   </Link>
                 )}
               </div>

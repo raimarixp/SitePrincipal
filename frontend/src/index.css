@@ -7,18 +7,77 @@
 @layer base {
   html {
     font-family: 'Inter', sans-serif;
-    @apply antialiased text-gray-900 bg-white;
+    @apply antialiased;
   }
 
-  /* Estiliza os títulos para serem BEM pesados como nas fotos */
+  body {
+    margin: 0;
+    min-height: 100vh;
+    /* FUNDO: Preto Absoluto (#000000) */
+    background-color: #000000;
+    /* TEXTO: Branco Puro (#FFFFFF) */
+    color: #FFFFFF;
+    overflow-x: hidden;
+  }
+
   h1, h2, h3, h4, h5, h6 {
-    @apply font-black tracking-tight; /* font-weight: 900 */
+    @apply font-black tracking-tight text-white;
   }
 }
 
 @layer components {
-  /* Botão arredondado estilo "Pílula" (Shop All) */
-  .btn-pill {
-    @apply rounded-full px-8 py-3 font-bold transition-all duration-300;
+  /* Botão Azul Relâmpago */
+  .btn-primary-new {
+    @apply font-bold tracking-wide uppercase px-6 py-3 rounded-lg transition-all duration-300;
+    background-color: #0077FF; /* Azul Relâmpago */
+    color: #FFFFFF;
+    box-shadow: 0 0 15px rgba(0, 119, 255, 0.6);
   }
+
+  .btn-primary-new:hover {
+    background-color: #0055CC; /* Azul mais escuro no hover */
+    box-shadow: 0 0 25px rgba(0, 119, 255, 0.8);
+  }
+
+  /* Link com efeito Hover Azul */
+  .nav-link {
+    @apply text-sm font-semibold leading-6 transition-colors tracking-wide uppercase;
+    color: #D1D3D4; /* Cinza Concreto (Tertiary) */
+  }
+  
+  .nav-link:hover {
+    color: #0077FF; /* Fica Azul no Hover */
+  }
+
+  /* Link Ativo */
+  .nav-link-active {
+    @apply font-bold shadow-sm;
+    color: #0077FF; /* Azul */
+  }
+
+  /* Card Preto com Borda Cinza (hover azul) */
+  .card-concrete {
+    @apply border rounded-xl shadow-lg transition-all duration-300;
+    background-color: #111111; /* Preto Leve (Card) */
+    border-color: rgba(209, 211, 212, 0.2); /* Borda Cinza transparente */
+  }
+
+  .card-concrete:hover {
+    border-color: rgba(0, 119, 255, 0.5); /* Borda Azul transparente no hover */
+  }
+}
+
+/* Scrollbar Azul */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #000000; 
+}
+::-webkit-scrollbar-thumb {
+  background: #333333; 
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #0077FF; /* Fica azul quando passa o mouse */
 }

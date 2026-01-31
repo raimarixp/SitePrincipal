@@ -259,7 +259,7 @@ export const AddressManager = () => {
               </div>
               <button
                 onClick={() => addr.id && handleDelete(addr.id)}
-                className="text-gray-400 hover:text-red-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="text-gray-400 hover:text-primary p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                 title="Excluir endereço"
               >
                 <TrashIcon className="h-5 w-5" />

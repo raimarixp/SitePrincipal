@@ -1,6 +1,5 @@
 import { HeroCarousel } from '../../components/sections/HeroCarousel';
 import { ValueProposition } from '../../components/sections/ValueProposition';
-import { FeaturedProducts } from '../../components/sections/ProductsSection/FeaturedProducts';
 import { ProcessSection } from '../../components/sections/ProcessSection'; // 👈 Importe a nova seção
 import { AboutSection } from '../../components/sections/AboutSection';
 import { Testimonials } from '../../components/sections/Testimonials';
@@ -22,11 +21,6 @@ export const Home = () => {
       */}
       <ValueProposition />
 
-      {/* 3. SOLUÇÕES (Produtos/Serviços) 
-         Trazemos isso para cima. O cliente quer ver o que você faz primeiro.
-         O componente FeaturedProducts já lida com 'relative z-10'.
-      */}
-      <FeaturedProducts />
 
       {/* 4. COMO FUNCIONA (Process Workflow) - NOVO 
          Fundo Escuro (bg-neutral-900) definido dentro do componente.

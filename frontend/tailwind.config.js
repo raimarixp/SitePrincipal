@@ -7,22 +7,37 @@ export default {
   theme: {
     extend: {
       colors: {
+        // === NOVA PALETA ===
         primary: {
-          DEFAULT: '#E63946', // Vermelho Vibrante (Estilo Uncode)
-          hover: '#D62828',   // Vermelho mais escuro para hover
+          DEFAULT: '#0077FF', // Azul Relâmpago (Ação, Destaque, Links)
+          hover: '#0055CC',   // Um tom mais escuro para o hover do botão
+          light: '#3392FF',   // Azul mais claro para brilhos
+        },
+        background: {
+          DEFAULT: '#000000', // Preto Absoluto (Fundo do Site)
+          card: '#111111',    // Preto levemente mais claro (Cards)
         },
         secondary: {
-          DEFAULT: '#1D3557', // Azul Escuro Profundo (para contraste se precisar)
-          hover: '#457B9D',
+          DEFAULT: '#FFFFFF', // Branco Puro (Texto Principal)
         },
-        dark: '#111827',      // Preto "suave" para fundos escuros
-        light: '#F8F9FA',     // Cinza quase branco para fundos claros
+        tertiary: {
+          DEFAULT: '#D1D3D4', // Cinza Concreto (Detalhes e Bordas)
+        },
+        // Compatibilidade
+        dark: '#000000',
+        light: '#FFFFFF',
+        danger: '#dc2626',
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'], // Vamos configurar isso no CSS já já
+        sans: ['Inter', 'sans-serif'],
       },
       backgroundImage: {
-        'hero-pattern': "url('https://images.unsplash.com/photo-1483985988355-763728e1935b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')",
+        // Gradiente sutil preto -> azul muito escuro no final
+        'hero-pattern': "linear-gradient(to bottom, #000000, #050505)", 
+      },
+      boxShadow: {
+        // Sombra azul neon para botões/cards
+        'neon': '0 0 10px rgba(0, 119, 255, 0.5)',
       }
     },
   },
