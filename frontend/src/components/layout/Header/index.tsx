@@ -57,19 +57,20 @@ export const Header = () => {
         
         {/* LOGO (Desktop) */}
         <div className="flex lg:flex-1">
-          <Link to="/" className="-m-1.5 p-1.5 group">
-            <span className="sr-only">Sua Empresa</span>
-            <img 
-              className="h-10 w-auto object-contain" 
-              src="/logo.png" 
-              alt="Logo Marca" 
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                // Fallback: WEB (Azul) + UILD (Branco)
-                e.currentTarget.parentElement!.innerHTML += '<span class="text-2xl font-black text-white tracking-tighter group-hover:text-tertiary transition-colors"><span class="text-primary">WEB</span>UILD<span class="text-primary">.</span></span>';
-              }}
-            />
-          </Link>
+<Link to="/" className="-m-1.5 p-1.5 flex items-center gap-2 group">
+  {/* Ícone SVG Pequeno */}
+
+  {/* logotipo do header*/}
+  <img 
+    src="https://i.ibb.co/ym9cXvZc/LOGO-WE-BUILD-azul.png"
+    alt="Webuild Logo" 
+    className="h-7 w-auto object-contain"
+    />
+  
+  <span className="text-2xl font-black text-white tracking-tighter">
+    <span className="text-primary">We</span>build<span className="text-primary">.</span>
+  </span>
+</Link>
         </div>
 
         {/* ÍCONES MOBILE */}
@@ -170,7 +171,7 @@ export const Header = () => {
             <Link to="/" className="-m-1.5 p-1.5">
                {/* AQUI ESTÁ A MUDANÇA NO MOBILE: Web em azul, o resto em branco */}
                <span className="text-2xl font-black text-white tracking-tighter">
-                 <span className="text-primary">Web</span>uildbr<span className="text-primary">.</span>
+                 <span className="text-primary">We</span>buildbr<span className="text-primary">.</span>
                </span>
             </Link>
             <button type="button" className="-m-2.5 rounded-md p-2.5 text-white hover:text-primary" onClick={() => setMobileMenuOpen(false)}>

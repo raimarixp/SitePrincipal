@@ -17,10 +17,11 @@ import { Home } from './pages/Home';
 import { Portfolio } from './pages/Portfolio'; // Essa é a página que lista os demos
 import { About } from './pages/About';
 import { Contact } from './pages/Contact';
+// 1. IMPORTE A PÁGINA DE PERFIL
+import { Profile } from './pages/Profile';
 
 // Imports de Auth e Usuário
 import { Login } from './pages/Auth/Login'; 
-import { Profile } from './pages/Profile';
 
 // Imports Administrativos
 import { AdminRoute } from './components/auth/AdminRoute';
@@ -96,7 +97,7 @@ function App() {
 
                 {/* Autenticação e Perfil */}
                 <Route path="/login" element={<Login />} />
-                <Route path="/minha-conta" element={<Profile />} />
+                <Route path="/perfil" element={<Profile />} />
 
                 
                 {/* Páginas Legais */}

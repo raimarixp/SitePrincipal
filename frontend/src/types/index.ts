@@ -28,3 +28,26 @@ export interface User {
   email: string | null;
   displayName: string | null;
 }
+
+
+export type OrderStatus = 'briefing' | 'design' | 'development' | 'review' | 'completed';
+
+export interface OrderStep {
+  id: string;
+  label: string;
+  description: string;
+  status: 'completed' | 'current' | 'upcoming';
+  date?: string;
+}
+
+export interface ClientOrder {
+  id: string;
+  projectName: string;
+  serviceType: string;
+  amount: number;
+  status: OrderStatus;
+  createdAt: string;
+  estimatedDelivery: string;
+  previewUrl?: string;
+  steps: OrderStep[];
+}

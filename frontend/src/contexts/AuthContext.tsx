@@ -9,15 +9,15 @@ import {
   type User, 
   onAuthStateChanged, 
   getAuth, 
-  signOut 
+  signOut as firebaseSignOut 
 } from 'firebase/auth';
 import app from '../services/firebase'; 
 
-// Definição da interface do Contexto
+// 1. Ajustamos a interface para usar 'signOut'
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  logout: () => Promise<void>; // Função logout tipada
+  signOut: () => Promise<void>; // Renomeado de 'logout' para 'signOut'
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -26,7 +26,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Inicializa o Auth usando o app importado
   const auth = getAuth(app);
 
   useEffect(() => {
@@ -37,10 +36,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, [auth]);
 
-  // Função de Logout que será exportada
-  const logout = async () => {
+  // 2. Renomeamos a função interna para bater com a interface
+  const handleSignOut = async () => {
     try {
-      await signOut(auth);
+      await firebaseSignOut(auth);
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
     }
@@ -50,7 +49,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider value={{ 
       user, 
       loading, 
-      logout 
+      signOut: handleSignOut // 3. Exportamos como 'signOut'
     }}>
       {!loading && children}
     </AuthContext.Provider>

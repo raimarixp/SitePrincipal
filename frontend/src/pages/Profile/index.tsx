@@ -1,316 +1,118 @@
-import React, { useState, useEffect } from 'react';
-import { updateEmail, updatePassword, updateProfile } from 'firebase/auth';
-import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore'; 
-import { useNavigate } from 'react-router-dom'; // Importante para redirecionar após logout
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { 
-  UserIcon, 
-  MapPinIcon, 
-  ShoppingBagIcon, 
+  Squares2X2Icon, 
+  Cog6ToothIcon, 
   ArrowRightOnRectangleIcon,
-  IdentificationIcon,
-  DevicePhoneMobileIcon
+  UserCircleIcon 
 } from '@heroicons/react/24/outline';
-
 import { useAuth } from '../../contexts/AuthContext';
-import { Button } from '../../components/ui/Button';
-import { AddressManager } from '../../components/profile/AddressManager';
-import { MyOrders } from '../Profile/MyOrders';
 
-type TabOption = 'settings' | 'addresses' | 'orders';
+// Importação das Abas (Vamos criar esses arquivos no próximo passo)
+import { MyProjects } from './tabs/MyProjects';
+import { Settings } from './tabs/Settings';
 
-// Funções utilitárias (Helpers)
-const maskCPF = (value: string) => {
-  return value
-    .replace(/\D/g, '')
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d{1,2})/, '$1-$2')
-    .replace(/(-\d{2})\d+?$/, '$1');
-};
-
-const maskPhone = (value: string) => {
-  return value
-    .replace(/\D/g, '')
-    .replace(/(\d{2})(\d)/, '($1) $2')
-    .replace(/(\d{5})(\d)/, '$1-$2')
-    .replace(/(-\d{4})\d+?$/, '$1');
-};
+const MENU_ITEMS = [
+  { id: 'projects', label: 'Meus Projetos', icon: Squares2X2Icon },
+  { id: 'settings', label: 'Configurações', icon: Cog6ToothIcon },
+];
 
 export const Profile = () => {
-  const { user, logout } = useAuth();
-  const db = getFirestore();
+  const [activeTab, setActiveTab] = useState('projects');
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabOption>('settings');
-  
-  // States do formulário
-  const [name, setName] = useState('');
-  const [cpf, setCpf] = useState('');
-  const [phone, setPhone] = useState('');
-  const [newEmail, setNewEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  
-  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  // 1. Carregar dados do Firestore ao entrar na tela
-  useEffect(() => {
-    const loadUserData = async () => {
-      if (user) {
-        setNewEmail(user.email || '');
-        setName(user.displayName || '');
-        
-        try {
-          const docRef = doc(db, "users", user.uid);
-          const docSnap = await getDoc(docRef);
-          
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            setCpf(data.cpf || '');
-            setPhone(data.phone || '');
-            if (!user.displayName && data.name) setName(data.name);
-          }
-        } catch (error) {
-          console.error("Erro ao carregar perfil:", error);
-        }
-      }
-    };
-    loadUserData();
-  }, [user, db]);
-
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-    setMessage(null);
-    setLoading(true);
-
-    try {
-      // 1. Atualizar Auth
-      if (newEmail !== user.email) await updateEmail(user, newEmail);
-      if (newPassword) await updatePassword(user, newPassword);
-      if (name !== user.displayName) await updateProfile(user, { displayName: name });
-
-      // 2. Atualizar Firestore
-      await setDoc(doc(db, "users", user.uid), {
-        name: name,
-        cpf: cpf,
-        phone: phone,
-        email: newEmail,
-        updatedAt: new Date()
-      }, { merge: true });
-
-      setMessage({ text: 'Perfil atualizado com sucesso!', type: 'success' });
-      setNewPassword(''); 
-    } catch (error: any) {
-      console.error(error);
-      if (error.code === 'auth/requires-recent-login') {
-        setMessage({ text: 'Por segurança, faça login novamente para alterar email ou senha.', type: 'error' });
-      } else {
-        setMessage({ text: 'Erro ao atualizar. Verifique os dados.', type: 'error' });
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleLogout = async () => {
-    if (logout) {
-      await logout();
-      navigate('/login'); // Redireciona para login
-    }
+    await signOut();
+    navigate('/login');
   };
 
-  if (!user) return null;
-
   return (
-    <div className="pt-32 pb-12 min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-neutral-950 text-white pt-28 pb-12 px-4 md:px-8">
+      
+      {/* Background Sutil */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03]" />
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 blur-[120px] rounded-full" />
+      </div>
+
+      <div className="max-w-7xl mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Minha Conta</h1>
-          <p className="text-gray-600 mt-1">Gerencie seus dados e acompanhe seus pedidos.</p>
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        {/* --- SIDEBAR (NAVEGAÇÃO) --- */}
+        <div className="lg:col-span-3 space-y-6">
           
-          {/* MENU LATERAL */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden sticky top-32">
-              <div className="p-6 border-b border-gray-100 bg-gray-50/50">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
-                    {name ? name.charAt(0).toUpperCase() : user.email?.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="overflow-hidden">
-                    <p className="font-medium text-gray-900 truncate">{name || 'Cliente'}</p>
-                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
-                  </div>
+          {/* Card do Usuário */}
+          <div className="p-6 rounded-3xl border border-white/5 bg-white/[0.02] backdrop-blur-xl flex flex-col items-center text-center">
+            <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-neutral-800 to-neutral-700 p-1 mb-4 shadow-xl">
+              {user?.photoURL ? (
+                <img src={user.photoURL} alt="User" className="w-full h-full rounded-full object-cover" />
+              ) : (
+                <div className="w-full h-full rounded-full bg-neutral-900 flex items-center justify-center">
+                   <UserCircleIcon className="w-10 h-10 text-neutral-500" />
                 </div>
-              </div>
-
-              <nav className="p-2 space-y-1">
-                <button
-                  onClick={() => setActiveTab('settings')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                    activeTab === 'settings' 
-                      ? 'bg-primary text-white shadow-md' 
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-primary'
-                  }`}
-                >
-                  <UserIcon className="h-5 w-5" />
-                  Dados Pessoais
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('addresses')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                    activeTab === 'addresses' 
-                      ? 'bg-primary text-white shadow-md' 
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-primary'
-                  }`}
-                >
-                  <MapPinIcon className="h-5 w-5" />
-                  Meus Endereços
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('orders')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                    activeTab === 'orders' 
-                      ? 'bg-primary text-white shadow-md' 
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-primary'
-                  }`}
-                >
-                  <ShoppingBagIcon className="h-5 w-5" />
-                  Meus Pedidos
-                </button>
-
-                <div className="pt-2 mt-2 border-t border-gray-100">
-                  <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition-colors">
-                    <ArrowRightOnRectangleIcon className="h-5 w-5" />
-                    Sair da Conta
-                  </button>
-                </div>
-              </nav>
+              )}
             </div>
+            <h2 className="font-bold text-lg">{user?.displayName || 'Visitante'}</h2>
+            <p className="text-xs text-neutral-400 font-mono mt-1">{user?.email}</p>
           </div>
 
-          {/* CONTEÚDO PRINCIPAL */}
-          <div className="lg:col-span-3">
-            
-            {/* 1. ABA DE DADOS PESSOAIS */}
-            {activeTab === 'settings' && (
-              <div className="bg-white p-6 rounded-xl shadow-sm animate-fade-in">
-                <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                  <UserIcon className="h-6 w-6 text-primary" />
-                  Dados Pessoais
-                </h2>
-                
-                {message && (
-                  <div className={`p-4 rounded-lg mb-6 text-sm font-medium ${
-                    message.type === 'error' ? 'bg-primary text-primary' : 'bg-green-50 text-green-700'
-                  }`}>
-                    {message.text}
-                  </div>
-                )}
-                
-                <form onSubmit={handleUpdate} className="space-y-6 max-w-2xl">
-                  {/* Nome Completo */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
-                    <input 
-                      type="text" 
-                      className="w-full h-11 px-4 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent"
-                      value={name} 
-                      onChange={e => setName(e.target.value)}
-                      placeholder="Ex: João da Silva"
-                      required
+          {/* Menu de Navegação */}
+          <nav className="p-2 rounded-3xl border border-white/5 bg-white/[0.02] backdrop-blur-xl">
+            {MENU_ITEMS.map((item) => {
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 relative group ${
+                    isActive ? 'text-white' : 'text-neutral-400 hover:text-white'
+                  }`}
+                >
+                  {/* Fundo Ativo (Glass) */}
+                  {isActive && (
+                    <motion.div 
+                      layoutId="activeTabBg"
+                      className="absolute inset-0 bg-white/10 rounded-xl"
                     />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* CPF */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-                        <IdentificationIcon className="h-4 w-4" /> CPF
-                      </label>
-                      <input 
-                        type="text" 
-                        className="w-full h-11 px-4 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent"
-                        value={cpf} 
-                        onChange={e => setCpf(maskCPF(e.target.value))}
-                        placeholder="000.000.000-00"
-                        maxLength={14}
-                      />
-                    </div>
-
-                    {/* Celular */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-                        <DevicePhoneMobileIcon className="h-4 w-4" /> Celular / WhatsApp
-                      </label>
-                      <input 
-                        type="tel" 
-                        className="w-full h-11 px-4 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent"
-                        value={phone} 
-                        onChange={e => setPhone(maskPhone(e.target.value))}
-                        placeholder="(00) 00000-0000"
-                        maxLength={15}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="border-t border-gray-100 pt-6 mt-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Dados de Acesso</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                        <input 
-                          type="email" 
-                          className="w-full h-11 px-4 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent bg-gray-50"
-                          value={newEmail} 
-                          onChange={e => setNewEmail(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nova Senha</label>
-                        <input 
-                          type="password" 
-                          className="w-full h-11 px-4 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent"
-                          value={newPassword} 
-                          onChange={e => setNewPassword(e.target.value)}
-                          placeholder="Deixe em branco para manter"
-                          minLength={6}
-                        />
-                      </div>
-                    </div>
-                  </div>
+                  )}
                   
-                  <div className="pt-2 flex justify-end">
-                    <Button type="submit" disabled={loading}>
-                      {loading ? 'Salvando...' : 'Salvar Alterações'}
-                    </Button>
-                  </div>
-                </form>
-              </div>
-            )}
+                  <item.icon className="w-5 h-5 relative z-10" />
+                  <span className="font-medium text-sm relative z-10">{item.label}</span>
+                </button>
+              );
+            })}
 
-            {/* 2. ABA DE ENDEREÇOS */}
-            {activeTab === 'addresses' && (
-              <AddressManager />
-            )}
+            <div className="h-px bg-white/5 my-2 mx-4" />
 
-            {/* 3. ABA DE PEDIDOS (INTEGRADA COM MYORDERS) */}
-            {activeTab === 'orders' && (
-              <div className="bg-white p-6 rounded-xl shadow-sm animate-fade-in">
-                <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                  <ShoppingBagIcon className="h-6 w-6 text-primary" />
-                  Histórico de Pedidos
-                </h2>
-                <MyOrders />
-              </div>
-            )}
-          </div>
+            <button 
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors"
+            >
+              <ArrowRightOnRectangleIcon className="w-5 h-5" />
+              <span className="font-medium text-sm">Sair</span>
+            </button>
+          </nav>
+
         </div>
+
+        {/* --- ÁREA DE CONTEÚDO --- */}
+        <div className="lg:col-span-9">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="min-h-[500px]"
+            >
+              {activeTab === 'projects' && <MyProjects />}
+              {activeTab === 'settings' && <Settings user={user} />}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
       </div>
     </div>
   );

@@ -1,79 +1,131 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { CheckCircleIcon } from '@heroicons/react/24/solid';
+import { 
+  CheckCircleIcon, 
+  ArrowRightIcon,
+  TrophyIcon,
+  UsersIcon
+} from '@heroicons/react/24/outline';
 import { Button } from '../../ui/Button';
 
+// --- DADOS ---
+const stats = [
+  { label: 'Anos de XP', value: '+8', icon: TrophyIcon },
+  { label: 'Engenheiros', value: '12', icon: UsersIcon },
+];
+
 const benefits = [
-  'Desenvolvimento Ágil e Escalável',
-  'Equipe de Engenheiros Sênior',
-  'Consultoria Estratégica Inclusa',
-  'Suporte Técnico Vitalício'
+  'Desenvolvimento Escalável',
+  'Arquitetura Clean Code',
+  'Consultoria de Negócio',
+  'Suporte Vitalício'
 ];
 
 export const AboutSection = () => {
   return (
-    // 'relative z-10' permite que o gradiente líquido apareça atrás desta seção
-    <section className="py-20 relative z-10">
-      <div className="container mx-auto px-6">
-        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+    <section className="relative py-32 bg-neutral-950 overflow-hidden">
+      
+      {/* === BACKGROUND AMBIENT === */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0 opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+        {/* Glow Lateral para separar da seção anterior */}
+        <div className="absolute top-1/2 right-0 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-900/20 rounded-full blur-[120px]" />
+      </div>
+
+      <div className="container mx-auto px-6 relative z-10">
+        <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
           
-          {/* Coluna de Texto: Card Branco para contraste */}
+          {/* === COLUNA DA IMAGEM (ESQUERDA AGORA, PARA ALTERNAR O FLUXO) === */}
+          {/* Mover a imagem para a esquerda cria um ritmo visual melhor se a seção anterior era centralizada ou tinha texto na esquerda */}
           <motion.div 
             initial={{ opacity: 0, x: -50 }}
             whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.8 }}
             viewport={{ once: true }}
-            className="flex-1 bg-white p-8 md:p-12 rounded-3xl shadow-2xl"
+            className="flex-1 relative w-full max-w-lg lg:max-w-none"
           >
-            <h2 className="text-primary font-bold tracking-wide uppercase text-sm mb-2">
-              Quem Somos
-            </h2>
-            <h3 className="text-3xl md:text-4xl font-black text-gray-900 mb-6 leading-tight">
-              Mais que código, entregamos <span className="text-primary">resultados</span>
-            </h3>
-            <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-              Nascemos com a missão de democratizar a tecnologia para empresas de todos os portes. 
-              Nossa equipe é formada por especialistas em engenharia de software, design e gestão de produtos, 
-              prontos para transformar sua ideia em um negócio digital de sucesso.
-            </p>
+            {/* Elemento Decorativo de Fundo (Moldura) */}
+            <div className="absolute -inset-4 border border-white/10 rounded-[2.5rem] bg-white/[0.01] backdrop-blur-sm -z-10" />
+            
+            <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 aspect-[4/5] group">
+              {/* Overlay de Cor para unificar a foto com o tema */}
+              <div className="absolute inset-0 bg-blue-900/20 mix-blend-overlay z-10 group-hover:bg-transparent transition-colors duration-700" />
+              
+              <img 
+                src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=800" 
+                alt="Equipe de desenvolvimento" 
+                className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 grayscale-[20%] group-hover:grayscale-0"
+              />
 
-            <ul className="space-y-4 mb-8">
-              {benefits.map((item, index) => (
-                <li key={index} className="flex items-center text-gray-700 font-medium">
-                  <CheckCircleIcon className="h-6 w-6 text-primary mr-3 flex-shrink-0" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-
-            <Link to="/sobre">
-              <Button size="lg" variant="outline" className="rounded-full px-8 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white transition-colors">
-                Conheça Nossa História
-              </Button>
-            </Link>
+              {/* Card Flutuante (Glass) */}
+              <div className="absolute bottom-6 left-6 right-6 bg-neutral-900/80 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-xl z-20">
+                <div className="flex justify-between items-center divide-x divide-white/10">
+                   {stats.map((stat, idx) => (
+                     <div key={idx} className={`flex-1 ${idx === 0 ? 'pr-4' : 'pl-4'} flex items-center gap-3`}>
+                        <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400">
+                          <stat.icon className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold text-white leading-none">{stat.value}</p>
+                          <p className="text-xs text-neutral-400 uppercase tracking-wider mt-1">{stat.label}</p>
+                        </div>
+                     </div>
+                   ))}
+                </div>
+              </div>
+            </div>
           </motion.div>
 
-          {/* Coluna de Imagem */}
+          {/* === COLUNA DE TEXTO (DIREITA) === */}
           <motion.div 
             initial={{ opacity: 0, x: 50 }}
             whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            transition={{ duration: 0.8 }}
             viewport={{ once: true }}
-            className="flex-1 relative"
+            className="flex-1"
           >
-            <div className="relative rounded-3xl overflow-hidden shadow-2xl aspect-[4/3] lg:aspect-square border-4 border-white/10">
-              <img 
-                src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=800" 
-                alt="Time de desenvolvimento reunido" 
-                className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700"
-              />
-              
-              {/* Card Flutuante de Estatística */}
-              <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-md p-6 rounded-2xl shadow-xl hidden md:block border border-gray-100">
-                <p className="text-4xl font-black text-primary mb-1">+5</p>
-                <p className="text-sm font-bold text-gray-600 uppercase tracking-wide">Projetos Entregues</p>
-              </div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 mb-6">
+               <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+               <span className="text-indigo-300 font-mono text-xs tracking-[0.2em] uppercase">
+                  Quem Somos
+               </span>
             </div>
+
+            <h3 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
+              Mais que código, entregamos <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">resultados reais</span>.
+            </h3>
+            
+            <p className="text-lg text-neutral-400 mb-8 leading-relaxed">
+              Nascemos com a missão de democratizar a tecnologia de ponta. 
+              Nossa equipe é formada por especialistas ex-big tech prontos para 
+              transformar sua visão em um ecossistema digital robusto e escalável.
+            </p>
+
+            {/* Grid de Benefícios Moderno */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+              {benefits.map((item, index) => (
+                <div key={index} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/5 hover:border-blue-500/30 transition-colors group">
+                  <CheckCircleIcon className="h-5 w-5 text-blue-500 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                  <span className="text-neutral-300 font-medium text-sm">{item}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link to="/sobre">
+                <Button size="lg" className="rounded-full bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)] border-none w-full sm:w-auto">
+                  Conheça Nossa História
+                </Button>
+              </Link>
+              
+              <Link to="/portfolio">
+                 <button className="group flex items-center justify-center gap-2 px-8 py-3 rounded-full border border-white/10 text-white hover:bg-white/5 transition-all w-full sm:w-auto">
+                    Ver Portfolio
+                    <ArrowRightIcon className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                 </button>
+              </Link>
+            </div>
+
           </motion.div>
 
         </div>
