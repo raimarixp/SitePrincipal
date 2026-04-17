@@ -21,13 +21,14 @@ const fragmentShader = `
     
     float noise = wave1 + wave2 + wave3;
     
-    // Mistura as cores baseada no movimento (Azul Relâmpago + Preto)
+    // Mistura as cores baseada no movimento (Preto -> Índigo Profundo -> Blurple)
     vec3 color = mix(uColor1, uColor2, uv.y + noise);
     color = mix(color, uColor3, sin(uv.x + uTime * 0.2) * 0.5 + 0.5);
     
     // Adiciona um brilho "elétrico" nas cristas das ondas
+    // Ajustado vetor RGB para um tom de brilho neon/índigo (0.6, 0.4, 1.0)
     float electric = smoothstep(0.4, 0.42, noise + 0.2) - smoothstep(0.42, 0.45, noise + 0.2);
-    color += vec3(0.5, 0.8, 1.0) * electric * 0.5;
+    color += vec3(0.6, 0.4, 1.0) * electric * 0.5;
 
     gl_FragColor = vec4(color, 1.0);
   }
@@ -44,13 +45,13 @@ const vertexShader = `
 const GradientMesh = () => {
   const mesh = useRef<THREE.Mesh>(null);
   
-  // Cores: Preto, Azul Relâmpago (#0077FF) e Azul Profundo
+  // Cores: Preto, Índigo Profundo, Blurple
   const uniforms = useMemo(
     () => ({
       uTime: { value: 0 },
-      uColor1: { value: new Color('#000000') }, // Preto (Fundo)
-      uColor2: { value: new Color('#001133') }, // Azul muito escuro
-      uColor3: { value: new Color('#0077FF') }, // Azul Relâmpago (Destaque)
+      uColor1: { value: new Color('#000000') }, // Preto Absoluto (Fundo base)
+      uColor2: { value: new Color('#0B0428') }, // Índigo Profundo (Gera uma transição rica e profissional)
+      uColor3: { value: new Color('#3C26F6') }, // NOVO PRIMÁRIO (Destaque principal)
     }),
     []
   );

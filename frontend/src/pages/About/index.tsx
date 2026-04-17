@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { CheckCircleIcon } from '@heroicons/react/24/outline';
+import { CodeStackGame } from '../../components/ui/CodeStackGame'; // Importando o Minigame
 
 export const About = () => {
   return (
@@ -9,7 +10,7 @@ export const About = () => {
       
       {/* Cabeçalho da Página (Texto Branco sobre o Gradiente) */}
       <div className="container mx-auto px-6 text-center mb-16">
-        <h1 className="text-4xl font-black tracking-tight text-white sm:text-6xl drop-shadow-sm">
+        <h1 className="text-4xl font-black italic tracking-tight text-white sm:text-6xl drop-shadow-sm">
           Inovação é o nosso código.
         </h1>
         <p className="mt-6 text-lg leading-8 text-gray-100 font-medium opacity-90 max-w-2xl mx-auto">
@@ -41,41 +42,39 @@ export const About = () => {
                 'Foco total em ROI (Retorno sobre Investimento).'
               ].map((item, index) => (
                 <li key={index} className="flex items-center gap-3 text-gray-700 font-medium">
-                  <CheckCircleIcon className="h-6 w-6 text-primary flex-shrink-0" />
+                  <CheckCircleIcon className="h-6 w-6 text-[#3C26F6] flex-shrink-0" />
                   {item}
                 </li>
               ))}
             </ul>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/produtos">
-                <Button size="lg" className="rounded-full px-8 w-full sm:w-auto shadow-lg font-bold">
+              <Link to="/produtos" className="w-full sm:w-auto">
+                <Button size="lg" className="rounded-full bg-[#3C26F6] hover:bg-[#2D18E5] text-white px-8 w-full shadow-lg font-bold border-none">
                   Ver Nossas Soluções
                 </Button>
               </Link>
-              <Link to="/contato">
-                <Button variant="outline" size="lg" className="rounded-full px-8 w-full sm:w-auto font-bold border-gray-300 text-gray-700 hover:bg-gray-50">
+              <Link to="/contato" className="w-full sm:w-auto">
+                <Button variant="outline" size="lg" className="rounded-full px-8 w-full font-bold border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-[#3C26F6] transition-colors">
                   Falar com Consultor
                 </Button>
               </Link>
             </div>
           </div>
 
-          {/* COLUNA 2: Imagem Ilustrativa (Ambiente Tech) */}
-          <div className="relative rounded-3xl overflow-hidden shadow-2xl aspect-[4/3] border-4 border-white/10">
-             <img 
-               src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=1632" 
-               alt="Equipe de desenvolvimento discutindo projeto" 
-               className="object-cover w-full h-full transform hover:scale-105 transition-transform duration-700"
-             />
-             {/* Overlay sutil */}
-             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+          {/* COLUNA 2: Minigame Interativo (Demonstração Técnica) */}
+          <div className="relative w-full flex flex-col items-center justify-center">
              
-             {/* Card Flutuante Decorativo */}
-             <div className="absolute bottom-6 right-6 bg-white/90 backdrop-blur-md p-4 rounded-xl shadow-lg hidden md:block">
-                <p className="font-bold text-gray-900">Stack Moderna</p>
-                <p className="text-xs text-gray-500">React • Node • Cloud</p>
+             {/* O Componente do Jogo que construímos */}
+             <div className="w-full rounded-[2rem] shadow-2xl overflow-hidden ring-4 ring-white/5">
+                <CodeStackGame />
              </div>
+             
+             {/* Texto de apoio amarrando a brincadeira com o negócio */}
+             <p className="mt-6 text-center text-sm md:text-base text-gray-400 font-medium max-w-md">
+               * Construir software é como empilhar blocos. Se a base não for precisa, a escala derruba a operação.
+             </p>
+
           </div>
 
         </div>

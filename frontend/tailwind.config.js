@@ -7,37 +7,40 @@ export default {
   theme: {
     extend: {
       colors: {
-        // === NOVA PALETA ===
+        // === NOVA PALETA DEFINITIVA ===
         primary: {
-          DEFAULT: '#0077FF', // Azul Relâmpago (Ação, Destaque, Links)
-          hover: '#0055CC',   // Um tom mais escuro para o hover do botão
-          light: '#3392FF',   // Azul mais claro para brilhos
+          DEFAULT: '#3C26F6', // O novo "Blurple" (Ação, Destaque, Links)
+          hover: '#2D18E5',   // Tom profundo para hover
+          light: '#7A6AFA',   // Tom claro para brilhos e efeitos elétricos
         },
         background: {
-          DEFAULT: '#000000', // Preto Absoluto (Fundo do Site)
-          card: '#111111',    // Preto levemente mais claro (Cards)
+          DEFAULT: '#000000', // Preto Absoluto
+          card: '#111111',    // Cards e seções
         },
         secondary: {
-          DEFAULT: '#FFFFFF', // Branco Puro (Texto Principal)
+          DEFAULT: '#FFFFFF', // Texto Principal
         },
         tertiary: {
-          DEFAULT: '#D1D3D4', // Cinza Concreto (Detalhes e Bordas)
+          DEFAULT: '#D1D3D4', // Cinza Concreto (Subtítulos)
+          muted: '#2A2A2A',   // Bordas sutis
         },
-        // Compatibilidade
+        // Compatibilidade e Auxiliares
         dark: '#000000',
         light: '#FFFFFF',
-        danger: '#dc2626',
+        danger: '#EF4444',
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        // Agora o site inteiro usa Poppins por padrão
+        sans: ['Poppins', 'sans-serif'],
       },
       backgroundImage: {
-        // Gradiente sutil preto -> azul muito escuro no final
-        'hero-pattern': "linear-gradient(to bottom, #000000, #050505)", 
+        // Gradiente profundo ajustado para o novo tom
+        'hero-pattern': "linear-gradient(to bottom, #000000, #0B0428)", 
       },
       boxShadow: {
-        // Sombra azul neon para botões/cards
-        'neon': '0 0 10px rgba(0, 119, 255, 0.5)',
+        // Sombra Neon atualizada para o novo Blurple (60, 38, 246)
+        'neon': '0 0 15px rgba(60, 38, 246, 0.4)',
+        'neon-strong': '0 0 25px rgba(60, 38, 246, 0.6)',
       }
     },
   },

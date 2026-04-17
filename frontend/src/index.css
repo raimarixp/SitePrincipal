@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+/* Importando a Poppins direto do Google Fonts (com itálicos inclusos) */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,7 +7,7 @@
 
 @layer base {
   html {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Poppins', sans-serif;
     @apply antialiased;
   }
 
@@ -20,42 +21,43 @@
     overflow-x: hidden;
   }
 
+  /* Títulos com a Poppins em Black Italic para impacto máximo de velocidade */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-black tracking-tight text-white;
+    @apply font-black italic tracking-tight text-white;
   }
 }
 
 @layer components {
-  /* Botão Azul Relâmpago */
+  /* Novo Botão Blurple */
   .btn-primary-new {
     @apply font-bold tracking-wide uppercase px-6 py-3 rounded-lg transition-all duration-300;
-    background-color: #0077FF; /* Azul Relâmpago */
+    background-color: #3C26F6; /* Blurple */
     color: #FFFFFF;
-    box-shadow: 0 0 15px rgba(0, 119, 255, 0.6);
+    box-shadow: 0 0 15px rgba(60, 38, 246, 0.4);
   }
 
   .btn-primary-new:hover {
-    background-color: #0055CC; /* Azul mais escuro no hover */
-    box-shadow: 0 0 25px rgba(0, 119, 255, 0.8);
+    background-color: #2D18E5; /* Blurple mais escuro no hover */
+    box-shadow: 0 0 25px rgba(60, 38, 246, 0.6);
   }
 
-  /* Link com efeito Hover Azul */
+  /* Link com efeito Hover Blurple */
   .nav-link {
     @apply text-sm font-semibold leading-6 transition-colors tracking-wide uppercase;
     color: #D1D3D4; /* Cinza Concreto (Tertiary) */
   }
   
   .nav-link:hover {
-    color: #0077FF; /* Fica Azul no Hover */
+    color: #3C26F6; /* Fica Blurple no Hover */
   }
 
   /* Link Ativo */
   .nav-link-active {
     @apply font-bold shadow-sm;
-    color: #0077FF; /* Azul */
+    color: #3C26F6; /* Blurple */
   }
 
-  /* Card Preto com Borda Cinza (hover azul) */
+  /* Card Preto com Borda Cinza (hover Blurple) */
   .card-concrete {
     @apply border rounded-xl shadow-lg transition-all duration-300;
     background-color: #111111; /* Preto Leve (Card) */
@@ -63,11 +65,12 @@
   }
 
   .card-concrete:hover {
-    border-color: rgba(0, 119, 255, 0.5); /* Borda Azul transparente no hover */
+    border-color: rgba(60, 38, 246, 0.5); /* Borda Blurple transparente no hover */
+    box-shadow: 0 0 20px rgba(60, 38, 246, 0.1);
   }
 }
 
-/* Scrollbar Azul */
+/* Scrollbar Minimalista (Fica Blurple ao passar o mouse) */
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -75,9 +78,9 @@
   background: #000000; 
 }
 ::-webkit-scrollbar-thumb {
-  background: #333333; 
+  background: #2A2A2A; 
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #0077FF; /* Fica azul quando passa o mouse */
+  background: #3C26F6; /* Brilha na nova cor */
 }

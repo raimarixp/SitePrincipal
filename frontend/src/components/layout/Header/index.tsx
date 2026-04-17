@@ -19,7 +19,22 @@ export const Header = () => {
   const [scrolled, setScrolled] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const location = useLocation();
-  const { user, logout } = useAuth();
+  
+  const auth = useAuth();
+  const user = auth?.user ?? null;
+
+  const logout = async () => {
+    if (!auth) return;
+    try {
+      if (typeof (auth as any).logout === 'function') {
+        await (auth as any).logout();
+      } else if (typeof (auth as any).signOut === 'function') {
+        await (auth as any).signOut();
+      }
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
@@ -62,14 +77,14 @@ export const Header = () => {
 
   {/* logotipo do header*/}
   <img 
-    src="https://i.ibb.co/ym9cXvZc/LOGO-WE-BUILD-azul.png"
+    src="https://res.cloudinary.com/ddqrpidxw/image/upload/v1776188288/log_branco_sem_fundo_jem0cr.png"
     alt="Webuild Logo" 
     className="h-7 w-auto object-contain"
     />
   
-  <span className="text-2xl font-black text-white tracking-tighter">
-    <span className="text-primary">We</span>build<span className="text-primary">.</span>
-  </span>
+  <span className="text-2xl font-black italic tracking-tighter text-white">
+  WE<span className="text-primary">BUILD</span>
+</span>
 </Link>
         </div>
 
@@ -170,9 +185,9 @@ export const Header = () => {
           <div className="flex items-center justify-between">
             <Link to="/" className="-m-1.5 p-1.5">
                {/* AQUI ESTÁ A MUDANÇA NO MOBILE: Web em azul, o resto em branco */}
-               <span className="text-2xl font-black text-white tracking-tighter">
-                 <span className="text-primary">We</span>buildbr<span className="text-primary">.</span>
-               </span>
+               <span className="text-2xl font-black italic tracking-tighter text-white">
+  WE<span className="text-primary">BUILD</span>
+</span>
             </Link>
             <button type="button" className="-m-2.5 rounded-md p-2.5 text-white hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
               <span className="sr-only">Fechar</span>

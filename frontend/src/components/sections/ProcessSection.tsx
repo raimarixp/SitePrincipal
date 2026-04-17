@@ -14,37 +14,37 @@ import {
 const steps = [
   {
     id: 1,
-    title: 'Alinhamento Estratégico',
-    description: 'Nossa equipe mergulha no seu negócio para entender dores, objetivos e o público-alvo da sua demanda.',
+    title: 'Imersão no Seu Negócio',
+    description: 'Antes de escrever uma linha de código, mergulhamos no seu universo. Mapeamos dores, objetivos e público-alvo para garantir que cada decisão técnica tenha um propósito de negócio.',
     icon: ChatBubbleBottomCenterTextIcon,
   },
   {
     id: 2,
-    title: 'Briefing & Escopo',
-    description: 'Definimos funcionalidades, coletamos referências visuais e blindamos o escopo do projeto.',
+    title: 'Planejamento Sem Surpresas',
+    description: 'Nada de escopo aberto. Definimos funcionalidades, alinhamos referências e blindamos o projeto para que ele ande exatamente como combinado.',
     icon: ClipboardDocumentCheckIcon,
   },
   {
     id: 3,
-    title: 'UI/UX Design',
-    description: 'Prototipagem de alta fidelidade. Você aprova o visual pixel-perfect antes de codificarmos.',
+    title: 'O Design que Vende',
+    description: 'Prototipagem de alta fidelidade. Cada pixel é pensado para conversão. Você aprova o visual antes de codificarmos – zero achismo, zero retrabalho.',
     icon: ComputerDesktopIcon,
   },
   {
     id: 4,
-    title: 'Engineering',
-    description: 'Desenvolvimento Clean Code utilizando React, Node.js e arquitetura escalável.',
+    title: 'Código Feito para Durar',
+    description: 'Clean Code com React e Node.js. Arquitetura escalável que cresce junto com seu negócio, sem precisar reescrever tudo depois.',
     icon: CodeBracketSquareIcon,
   },
   {
     id: 5,
-    title: 'Quality Assurance',
+    title: 'Blindamos Contra Erros',
     description: 'Testes de integração, segurança, performance e SEO técnico para garantir a robustez.',
     icon: WrenchScrewdriverIcon,
   },
   {
     id: 6,
-    title: 'Deploy & Growth',
+    title: 'Lançamento e treinamento',
     description: 'Publicação em ambiente produtivo, treinamento da equipe e monitoramento de métricas.',
     icon: RocketLaunchIcon,
   }
